@@ -1,5 +1,5 @@
 // 注册插件
-ll.registerPlugin("ProgrammableCamera", "Programmable Camera 可编程视角相机", [1, 0, 0, Version.Release], {
+ll.registerPlugin("ProgrammableCamera", "Programmable Camera 可编程视角相机", [1, 0, 1, Version.Release], {
     "Author": "odorajbotoj"
 });
 
@@ -205,7 +205,7 @@ mc.listen("onServerStarted", () => {
     pc_cmd.setEnum("ScriptExecAction", ["exec"]);
     pc_cmd.mandatory("scriptAction", ParamType.Enum, "ScriptExecAction", "ScriptExecAction", 1);
     pc_cmd.optional("s_owner", ParamType.Player);
-    pc_cmd.overload(["ScriptAction", "ScriptExecAction", "s_name", "s_owner"]);
+    pc_cmd.overload(["ScriptAction", "ScriptExecAction", "s_name", "delay", "s_owner"]);
 
     // pc script ls
     pc_cmd.setEnum("ScriptListAction", ["ls"]);
@@ -454,7 +454,7 @@ mc.listen("onServerStarted", () => {
                         // exec选项，执行脚本
                         case "exec":
                             // 这一段很多源码直接照搬上面的view
-                            // 判断是不是访问别人的点位
+                            // 判断是不是访问别人的脚本
                             var owner;
                             if (res.s_owner != null) {
                                 if (res.s_owner.length == 0) {

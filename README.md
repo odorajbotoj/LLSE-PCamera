@@ -36,7 +36,7 @@
 
 + `pc script edit <string>` 编辑脚本（详见“编辑脚本”）章节
 
-+ `pc script exec <string> [target]` 执行一个脚本。若 `public_script` 为真，则可以通过指定一个target执行他人的脚本
++ `pc script exec <string> [delay] [target]` 执行一个脚本。可以设置延时（毫秒）。若 `public_script` 为真，则可以通过指定一个target执行他人的脚本
 
 + `pc script ls` 列出个人所有脚本
 

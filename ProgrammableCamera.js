@@ -1,5 +1,5 @@
 // 注册插件
-ll.registerPlugin("ProgrammableCamera", "Programmable Camera 可编程视角相机", [1, 0, 1, Version.Release], {
+ll.registerPlugin("ProgrammableCamera", "Programmable Camera 可编程视角相机", [1, 0, 2, Version.Release], {
     "Author": "odorajbotoj"
 });
 
@@ -405,7 +405,7 @@ mc.listen("onServerStarted", () => {
                                 var f = File.readFrom(`.\\plugins\\ProgrammableCameraData\\scripts\\${name}\\${res.s_name}.txt`);
                                 if (f != null) {
                                     var fa = f.split(/\r?\n|(?<!\n)\r/);
-                                    fa.unshift(fa.length);
+                                    fa.unshift(fa.length+1);
                                     db.set(`${name}.buf`, fa);
                                 } else {
                                     out.error("读取旧的文件失败");

@@ -1,18 +1,21 @@
 // 注册插件
-ll.registerPlugin("ProgrammableCamera", "Programmable Camera 可编程视角相机", [1, 0, 2, Version.Release], {
+ll.registerPlugin("ProgrammableCamera", "Programmable Camera 可编程视角相机", [1, 1, 0, Version.Dev], {
     "Author": "odorajbotoj"
 });
 
+// 数据路径
+const DATAPATH = ".\\plugins\\ProgrammableCameraData\\"
+
 // 数据库
-const db = new KVDatabase(".\\plugins\\ProgrammableCameraData\\db");
+const db = new KVDatabase(DATAPATH + "db");
 
 // 配置文件
-const conf = new JsonConfigFile(".\\plugins\\ProgrammableCameraData\\conf.json");
+const conf = new JsonConfigFile(DATAPATH + "conf.json");
 const PUB_POINT = conf.init("public_point", false); // 是否允许访问别人的点位
 const PUB_SCRIPT = conf.init("public_script", false); // 是否允许执行别人的脚本
 
 // 创建文件夹
-File.mkdir(".\\plugins\\ProgrammableCameraData\\scripts");
+File.mkdir(DATAPATH + "scripts");
 
 // 这个函数是从网上搜索到的。自己理解了之后贴出来了
 function setTimeoutWithArgs(callback, timeout, param) {
@@ -56,79 +59,101 @@ function readStr(str) {
 }
 
 // “解释器”主逻辑
-function scriptInterpret(sArr, pl, out) {
-    //
-    var id = pl.uniqueId.toString();
-    var globalDelay = 0;
-    var tArr = new Array();
+const sleep = (delay) => new Promise((resolve) => setTimeout(resolve, delay))
+async function scriptInterpret(sArr, id, name) {
+    // 这一部分重构过了，减少异步压力
+    var headStack = new Array();
+    var tailStack = new Array();
+    var delayStack = new Array();
     for (var i in sArr) {
-        if (sArr[i].startsWith("title ")) {
-            // 发送一个标题
-            var acti = readStr(sArr[i].substring(6));
-            var para = acti[1].trim().split(" ");
-            if (para.length != 4) {
-                out.error(`错误的参数数目在第 ${parseInt(i)+1} 行`);
+        // 重新获取player
+        var pl = mc.getPlayer(id);
+        if (pl == null) {
+            break;
+        }
+        // 检查lock状态
+        var lock = db.get(`${pl.name}.exec`);
+        if (lock == null) {
+            break;
+        }
+        // 跳过空行
+        if (sArr[i].startsWith("#") || sArr[i] == "") {
+            continue;
+        }
+        // 处理语句
+        var s = headStack.join(" ") + " " + sArr[i] + " " + tailStack.join(" ");
+        s = s.trim();
+        // 执行语句
+        if (sArr[i].startsWith("head ")) {
+            // 支持head，以简化输入
+            headStack.push(sArr[i].substring(5));
+        } else if (sArr[i] == "headend") {
+            headStack.pop();
+        } else if (sArr[i].startsWith("tail ")) {
+            // 支持tail，以简化输入
+            tailStack.push(sArr[i].substring(5));
+        } else if (sArr[i] == "tailend") {
+            tailStack.pop();
+        } else if (sArr[i].startsWith("autodelay ")) {
+            // 支持autodelay，以简化输入
+            var dems = parseInt(sArr[i].substring(10));
+            if (isNaN(dems)) {
+                pl.tell(`无效的输入在第 ${parseInt(i)+1} 行`);
                 continue;
             }
-            var p = [parseInt(para[0]), parseInt(para[1]), parseInt(para[2]), parseInt(para[3])];
-            if (isNaN(p[0]) || isNaN(p[1]) || isNaN(p[2]) || isNaN(p[3])) {
-                out.error(`无效的输入在第 ${parseInt(i)+1} 行`);
-                continue;
-            }
-            var tid = setTimeoutWithArgs((id, acti, p) => {
-                var pl = mc.getPlayer(id);
-                if (pl != null) {
-                    pl.setTitle(acti[0], p[0], p[1], p[2], p[3]);
-                }
-            }, globalDelay, id, acti, p);
-            tArr.push(tid);
-        } else if (sArr[i].startsWith("toast ")) {
-            // 发送一个toast
-            var acti = readStr(sArr[i].substring(6));
-            acti[1] = readStr(acti[1])[0];
-            var tid = setTimeoutWithArgs((id, acti) => {
-                var pl = mc.getPlayer(id);
-                if (pl != null) {
-                    pl.sendToast(acti[0], acti[1]);
-                }
-            }, globalDelay, id, acti);
-            tArr.push(tid);
-        } else if (sArr[i].startsWith("shake ")) {
-            // 执行camerashake操作
-            var acti = sArr[i].substring(6);
-            var tid = setTimeoutWithArgs((id, acti) => {
-                var pl = mc.getPlayer(id);
-                if (pl != null) {
-                    pl.runcmd(`pc shake ${acti}`);
-                }
-            }, globalDelay, id, acti);
-            tArr.push(tid);
-        } else if (sArr[i].startsWith("cam ")) {
-            // 执行camera操作
-            var acti = sArr[i].substring(4);
-            var tid = setTimeoutWithArgs((id, acti) => {
-                var pl = mc.getPlayer(id);
-                if (pl != null) {
-                    pl.runcmd(`pc eval ${acti}`);
-                }
-            }, globalDelay, id, acti);
-            tArr.push(tid);
+            delayStack.push(dems);
+            continue;
+        } else if (sArr[i] == "autodelayend") {
+            delayStack.pop();
         } else if (sArr[i].startsWith("delay ")) {
             // 设置延时，单位毫秒
             var dems = parseInt(sArr[i].substring(6));
             if (isNaN(dems)) {
-                out.error(`无效的输入在第 ${parseInt(i)+1} 行`);
+                pl.tell(`无效的输入在第 ${parseInt(i)+1} 行`);
                 continue;
             }
-            globalDelay += dems;
-        } else if (sArr[i] == "") {
-            continue;
+            await sleep(dems);
+        } else if (s.startsWith("title ")) {
+            // 发送一个标题
+            var acti = readStr(s.substring(6));
+            var para = acti[1].trim().split(" ");
+            if (para.length != 4) {
+                pl.tell(`错误的参数数目在第 ${parseInt(i)+1} 行`);
+                continue;
+            }
+            var p = [parseInt(para[0]), parseInt(para[1]), parseInt(para[2]), parseInt(para[3])];
+            if (isNaN(p[0]) || isNaN(p[1]) || isNaN(p[2]) || isNaN(p[3])) {
+                pl.tell(`无效的输入在第 ${parseInt(i)+1} 行`);
+                continue;
+            }
+            pl.setTitle(acti[0], p[0], p[1], p[2], p[3]);
+        } else if (s.startsWith("toast ")) {
+            // 发送一个toast
+            var acti = readStr(s.substring(6));
+            acti[1] = readStr(acti[1])[0];
+            pl.sendToast(acti[0], acti[1]);
+        } else if (s.startsWith("shake ")) {
+            // 执行camerashake操作
+            var acti = s.substring(6);
+            pl.runcmd(`pc shake ${acti}`);
+        } else if (s.startsWith("cam ")) {
+            // 执行camera操作
+            var acti = s.substring(4);
+            pl.runcmd(`pc eval ${acti}`);
         } else {
-            out.error(`未知的操作在第 ${parseInt(i)+1} 行`);
+            pl.tell(`未知的操作在第 ${parseInt(i)+1} 行`);
+            continue;
         }
+        // autodelay
+        if (delayStack.length != 0) {
+            await sleep(delayStack[delayStack.length-1]);
+        }
+        delete pl;
     }
-    db.set(`${pl.name}.task`, tArr);
+    db.delete(`${name}.exec`);
 }
+
+
 
 mc.listen("onServerStarted", () => {
     // 注册指令pc, 别名cam
@@ -223,13 +248,7 @@ mc.listen("onServerStarted", () => {
             switch (res.action) {
                 // clear选项, 清除相机效果，停止执行脚本
                 case "clear":
-                    var tArr = db.get(`${name}.task`);
-                    if (tArr != null) {
-                        for (var i in tArr) {
-                            clearInterval(tArr[i]);
-                        }
-                        db.delete(`${name}.task`);
-                    }
+                    db.delete(`${name}.exec`);
                     mc.runcmdEx(`camera ${name} clear`);
                     mc.runcmdEx(`camerashake stop ${name}`);
                     out.success("已清除所有相机效果");
@@ -396,13 +415,13 @@ mc.listen("onServerStarted", () => {
                     switch (res.scriptAction) {
                         // edit选项，进入编辑模式
                         case "edit":
-                            var path = `.\\plugins\\ProgrammableCameraData\\scripts\\${name}\\`;
-                            if (!File.exists(`.\\plugins\\ProgrammableCameraData\\scripts\\${name}\\`)) {
-                                File.mkdir(`.\\plugins\\ProgrammableCameraData\\scripts\\${name}\\`)
+                            var path = DATAPATH + `scripts\\${name}\\`;
+                            if (!File.checkIsDir(path)) {
+                                File.mkdir(path)
                             }
                             db.set(`${name}.edit`, res.s_name);
-                            if (File.exists(`.\\plugins\\ProgrammableCameraData\\scripts\\${name}\\${res.s_name}.txt`) && !File.checkIsDir(`.\\plugins\\ProgrammableCameraData\\scripts\\${name}\\${res.s_name}.txt`)) {
-                                var f = File.readFrom(`.\\plugins\\ProgrammableCameraData\\scripts\\${name}\\${res.s_name}.txt`);
+                            if (File.exists(path + `${res.s_name}.txt`) && !File.checkIsDir(path + `${res.s_name}.txt`)) {
+                                var f = File.readFrom(path + `${res.s_name}.txt`);
                                 if (f != null) {
                                     var fa = f.split(/\r?\n|(?<!\n)\r/);
                                     fa.unshift(fa.length+1);
@@ -418,7 +437,7 @@ mc.listen("onServerStarted", () => {
 
                         // rm选项，删除脚本
                         case "rm":
-                            var path = `.\\plugins\\ProgrammableCameraData\\scripts\\${name}\\${res.s_name}.txt`;
+                            var path = DATAPATH + `scripts\\${name}\\${res.s_name}.txt`;
                             if (File.exists(path) && !File.checkIsDir(path)) {
                                 var ok = File.delete(path);
                                 if (ok) {
@@ -433,7 +452,7 @@ mc.listen("onServerStarted", () => {
                         
                         // cat选项，列出脚本内容
                         case "cat":
-                            var path = `.\\plugins\\ProgrammableCameraData\\scripts\\${name}\\${res.s_name}.txt`;
+                            var path = DATAPATH + `scripts\\${name}\\${res.s_name}.txt`;
                             if (File.exists(path) && !File.checkIsDir(path)) {
                                 var f = File.readFrom(path);
                                 if (f != null) {
@@ -491,15 +510,17 @@ mc.listen("onServerStarted", () => {
                                     return;
                                 }
                             }
-                            var path = `.\\plugins\\ProgrammableCameraData\\scripts\\${name}\\${res.s_name}.txt`;
+                            var path = DATAPATH + `scripts\\${name}\\${res.s_name}.txt`;
                             if (File.exists(path) && !File.checkIsDir(path)) {
                                 // 读取文件
                                 var f = File.readFrom(path);
                                 if (f != null) {
                                     var fa = f.split(/\r?\n|(?<!\n)\r/);
                                     out.addMessage(`开始读取并执行Script: ${res.s_name}`);
+                                    // 加锁
+                                    db.set(`${name}.exec`, true);
                                     // 丢给“解释器”就完事了
-                                    scriptInterpret(fa, ori.player, out);
+                                    scriptInterpret(fa, ori.player.uniqueId.toString(), name);
                                     out.success(`任务已添加`);
                                 } else {
                                     out.error("读取失败");
@@ -511,7 +532,7 @@ mc.listen("onServerStarted", () => {
 
                         // ls选项，列出所有脚本
                         case "ls":
-                            var path = `.\\plugins\\ProgrammableCameraData\\scripts\\${name}\\`;
+                            var path = DATAPATH + `scripts\\${name}\\`;
                             if (File.exists(path) && File.checkIsDir(path)) {
                                 var f = File.getFilesList(path);
                                 if (f.length != 0) {
@@ -562,7 +583,7 @@ mc.listen("onChat", (pl, msg) => {
                 pl.sendToast("失败", "缓冲区为空");
                 return false;
             }
-            File.writeTo(`.\\plugins\\ProgrammableCameraData\\scripts\\${name}\\${efn}.txt`,arr.slice(1).join("\n").trim());
+            File.writeTo(DATAPATH + `scripts\\${name}\\${efn}.txt`,arr.slice(1).join("\n").trim());
             db.delete(`${name}.buf`);
             pl.sendToast("成功", "文件已写入");
         } else if (msg == ":p") {

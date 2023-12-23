@@ -46,7 +46,7 @@
 
 ## 脚本
 
-+ `delay ms` 延时（毫秒）。所有的任务是异步执行的，故延时十分重要。
++ `delay ms` 延时（毫秒）。语句操作不会阻塞等待结果，故延时十分重要。
 
 + `title "content" type fadeInTime stayTime fadeOutTime` content为标题内容（支持反斜杠转义双引号），末尾三个参数分别是淡入、停留、淡出时间。type取值如下：
 
@@ -67,6 +67,12 @@
 + `shake` 同上述 `pc shake`
 
 + `cam` 同上述 `pc eval`
+
++ `head` 在遇到下一个 `headend` 或结尾前使用相同前缀
+
++ `tail` 在遇到下一个 `tailend` 或结尾前使用相同后缀
+
++ `autodelay` 在遇到下一个 `autodelayend` 或结尾前每一条指令后都执行delay
 
 ## 编辑脚本
 

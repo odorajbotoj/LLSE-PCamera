@@ -1,5 +1,5 @@
 // 注册插件
-ll.registerPlugin("ProgrammableCamera", "Programmable Camera 可编程视角相机", [1, 1, 0, Version.Dev], {
+ll.registerPlugin("ProgrammableCamera", "Programmable Camera 可编程视角相机", [1, 1, 1, Version.Release], {
     "Author": "odorajbotoj"
 });
 
@@ -429,8 +429,6 @@ mc.listen("onServerStarted", () => {
                                 } else {
                                     out.error("读取旧的文件失败");
                                 }
-                            } else {
-                                db.delete(`${name}.buf`);   
                             }
                             out.success("已进入编辑模式");
                             break;
@@ -575,6 +573,7 @@ mc.listen("onChat", (pl, msg) => {
             return true;
         } else if (msg == ":q") {
             db.delete(`${name}.edit`);
+            db.delete(`${name}.buf`);
             pl.sendToast("退出", "您已退出编辑模式");
         } else if (msg == ":w") {
             // 写入文件
@@ -584,7 +583,6 @@ mc.listen("onChat", (pl, msg) => {
                 return false;
             }
             File.writeTo(DATAPATH + `scripts\\${name}\\${efn}.txt`,arr.slice(1).join("\n").trim());
-            db.delete(`${name}.buf`);
             pl.sendToast("成功", "文件已写入");
         } else if (msg == ":p") {
             // 打印缓冲区

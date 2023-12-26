@@ -1,10 +1,11 @@
 // 注册插件
-ll.registerPlugin("ProgrammableCamera", "Programmable Camera 可编程视角相机", [1, 1, 1, Version.Release], {
+ll.registerPlugin("ProgrammableCamera", "Programmable Camera 可编程视角相机", [1, 2, 1, Version.Release], {
     "Author": "odorajbotoj"
 });
 
 // 数据路径
-const DATAPATH = ".\\plugins\\ProgrammableCameraData\\"
+const DATAPATH = ".\\plugins\\ProgrammableCameraData\\";
+const VERSION = "1.2.1";
 
 // 数据库
 const db = new KVDatabase(DATAPATH + "db");
@@ -65,6 +66,7 @@ async function scriptInterpret(sArr, id, name) {
     var headStack = new Array();
     var tailStack = new Array();
     var delayStack = new Array();
+    var endStack = new Array();
     for (var i in sArr) {
         // 重新获取player
         var pl = mc.getPlayer(id);
@@ -80,50 +82,67 @@ async function scriptInterpret(sArr, id, name) {
         if (sArr[i].startsWith("#") || sArr[i] == "") {
             continue;
         }
-        // 处理语句
-        var s = headStack.join(" ") + " " + sArr[i] + " " + tailStack.join(" ");
-        s = s.trim();
-        // 执行语句
+        // 解析流程语句
         if (sArr[i].startsWith("head ")) {
             // 支持head，以简化输入
             headStack.push(sArr[i].substring(5));
-        } else if (sArr[i] == "headend") {
-            headStack.pop();
+            endStack.push("head");
+            continue;
         } else if (sArr[i].startsWith("tail ")) {
             // 支持tail，以简化输入
             tailStack.push(sArr[i].substring(5));
-        } else if (sArr[i] == "tailend") {
-            tailStack.pop();
+            endStack.push("tail");
+            continue;
         } else if (sArr[i].startsWith("autodelay ")) {
             // 支持autodelay，以简化输入
             var dems = parseInt(sArr[i].substring(10));
             if (isNaN(dems)) {
-                pl.tell(`无效的输入在第 ${parseInt(i)+1} 行`);
+                pl.tell(`${Format.Red}Error: 无效的输入在第 ${parseInt(i)+1} 行${Format.Clear}`);
                 continue;
             }
             delayStack.push(dems);
+            endStack.push("delay");
             continue;
-        } else if (sArr[i] == "autodelayend") {
-            delayStack.pop();
+        } else if (sArr[i] == "end") {
+            // 闭合一个代码块
+            switch (endStack[endStack.length-1]) {
+                case "head":
+                    headStack.pop();
+                    break;
+                case "tail":
+                    tailStack.pop();
+                    break;
+                case "delay":
+                    delayStack.pop();
+                    break;
+            }
+            endStack.pop();
+            continue;
         } else if (sArr[i].startsWith("delay ")) {
             // 设置延时，单位毫秒
             var dems = parseInt(sArr[i].substring(6));
             if (isNaN(dems)) {
-                pl.tell(`无效的输入在第 ${parseInt(i)+1} 行`);
+                pl.tell(`${Format.Red}Error: 无效的输入在第 ${parseInt(i)+1} 行${Format.Clear}`);
                 continue;
             }
             await sleep(dems);
-        } else if (s.startsWith("title ")) {
+            continue;
+        }
+        // 处理功能语句
+        var s = headStack.join(" ") + " " + sArr[i] + " " + tailStack.join(" ");
+        s = s.trim();
+        // 解析功能语句
+        if (s.startsWith("title ")) {
             // 发送一个标题
             var acti = readStr(s.substring(6));
             var para = acti[1].trim().split(" ");
             if (para.length != 4) {
-                pl.tell(`错误的参数数目在第 ${parseInt(i)+1} 行`);
+                pl.tell(`${Format.Red}Error: 错误的参数数目在第 ${parseInt(i)+1} 行${Format.Clear}`);
                 continue;
             }
             var p = [parseInt(para[0]), parseInt(para[1]), parseInt(para[2]), parseInt(para[3])];
             if (isNaN(p[0]) || isNaN(p[1]) || isNaN(p[2]) || isNaN(p[3])) {
-                pl.tell(`无效的输入在第 ${parseInt(i)+1} 行`);
+                pl.tell(`${Format.Red}Error: 无效的输入在第 ${parseInt(i)+1} 行${Format.Clear}`);
                 continue;
             }
             pl.setTitle(acti[0], p[0], p[1], p[2], p[3]);
@@ -141,7 +160,7 @@ async function scriptInterpret(sArr, id, name) {
             var acti = s.substring(4);
             pl.runcmd(`pc eval ${acti}`);
         } else {
-            pl.tell(`未知的操作在第 ${parseInt(i)+1} 行`);
+            pl.tell(`${Format.Red}Error: 未知的操作在第 ${parseInt(i)+1} 行${Format.Clear}`);
             continue;
         }
         // autodelay
@@ -149,6 +168,9 @@ async function scriptInterpret(sArr, id, name) {
             await sleep(delayStack[delayStack.length-1]);
         }
         delete pl;
+    }
+    if (endStack.length != 0) {
+        pl.tell(`${Format.Yellow}Warning: 有未闭合的代码块${Format.Clear}`);
     }
     db.delete(`${name}.exec`);
 }
@@ -172,14 +194,13 @@ mc.listen("onServerStarted", () => {
     // pc eval <cam_cmd>
     pc_cmd.setEnum("EvalAction", ["eval"]);
     pc_cmd.mandatory("action", ParamType.Enum, "EvalAction", "EvalAction", 1);
-    pc_cmd.mandatory("cam_cmd", ParamType.RawText);
-    pc_cmd.overload(["EvalAction", "cam_cmd"]);
+    pc_cmd.mandatory("cmd", ParamType.RawText);
+    pc_cmd.overload(["EvalAction", "cmd"]);
 
     // pc shake <cam_cmd>
     pc_cmd.setEnum("ShakeAction", ["shake"]);
     pc_cmd.mandatory("action", ParamType.Enum, "ShakeAction", "ShakeAction", 1);
-    pc_cmd.mandatory("shake_cmd", ParamType.RawText);
-    pc_cmd.overload(["ShakeAction", "shake_cmd"]);
+    pc_cmd.overload(["ShakeAction", "cmd"]);
 
     // pc point save <p1|p2|p3|p4|p5|p6|p7|p8> [comment]
     pc_cmd.setEnum("PointAction", ["point"]);
@@ -195,8 +216,8 @@ mc.listen("onServerStarted", () => {
     pc_cmd.setEnum("PointViewAction", ["view"]);
     pc_cmd.mandatory("pointAction", ParamType.Enum, "PointViewAction", "PointViewAction", 1);
     pc_cmd.optional("delay", ParamType.Int);
-    pc_cmd.optional("p_owner", ParamType.Player);
-    pc_cmd.overload(["PointAction", "PointViewAction", "point", "delay", "p_owner"]);
+    pc_cmd.optional("owner", ParamType.Player);
+    pc_cmd.overload(["PointAction", "PointViewAction", "point", "delay", "owner"]);
 
     // pc point rm <p1|p2|p3|p4|p5|p6|p7|p8>
     pc_cmd.setEnum("PointRemoveAction", ["rm"]);
@@ -213,24 +234,23 @@ mc.listen("onServerStarted", () => {
     pc_cmd.mandatory("action", ParamType.Enum, "ScriptAction", "ScriptAction", 1);
     pc_cmd.setEnum("ScriptEditAction", ["edit"]);
     pc_cmd.mandatory("scriptAction", ParamType.Enum, "ScriptEditAction", "ScriptEditAction", 1);
-    pc_cmd.mandatory("s_name", ParamType.String);
-    pc_cmd.overload(["ScriptAction", "ScriptEditAction", "s_name"]);
+    pc_cmd.mandatory("name", ParamType.String);
+    pc_cmd.overload(["ScriptAction", "ScriptEditAction", "name"]);
 
     // pc script rm <name>
     pc_cmd.setEnum("ScriptRemoveAction", ["rm"]);
     pc_cmd.mandatory("scriptAction", ParamType.Enum, "ScriptRemoveAction", "ScriptRemoveAction", 1);
-    pc_cmd.overload(["ScriptAction", "ScriptRemoveAction", "s_name"]);
+    pc_cmd.overload(["ScriptAction", "ScriptRemoveAction", "name"]);
 
     // pc script cat <name>
     pc_cmd.setEnum("ScriptCatAction", ["cat"]);
     pc_cmd.mandatory("scriptAction", ParamType.Enum, "ScriptCatAction", "ScriptCatAction", 1);
-    pc_cmd.overload(["ScriptAction", "ScriptCatAction", "s_name"]);
+    pc_cmd.overload(["ScriptAction", "ScriptCatAction", "name"]);
 
     // pc script exec <name> [delay] [owner]
     pc_cmd.setEnum("ScriptExecAction", ["exec"]);
     pc_cmd.mandatory("scriptAction", ParamType.Enum, "ScriptExecAction", "ScriptExecAction", 1);
-    pc_cmd.optional("s_owner", ParamType.Player);
-    pc_cmd.overload(["ScriptAction", "ScriptExecAction", "s_name", "delay", "s_owner"]);
+    pc_cmd.overload(["ScriptAction", "ScriptExecAction", "name", "delay", "owner"]);
 
     // pc script ls
     pc_cmd.setEnum("ScriptListAction", ["ls"]);
@@ -256,8 +276,7 @@ mc.listen("onServerStarted", () => {
 
                 // eval选项, 相当于下放camera ${name}指令
                 case "eval":
-                    var cam_cmd = res.cam_cmd;
-                    var rst = mc.runcmdEx(`camera ${name} ${cam_cmd}`);
+                    var rst = mc.runcmdEx(`camera ${name} ${res.cmd}`);
                     if (rst.success) {
                         out.success(rst.output);
                     } else {
@@ -268,8 +287,7 @@ mc.listen("onServerStarted", () => {
 
                 // shake选项, 相当于下放camerashake add ${name}指令
                 case "shake":
-                    var shake_cmd = res.shake_cmd;
-                    var rst = mc.runcmdEx(`camerashake add ${name} ${shake_cmd}`);
+                    var rst = mc.runcmdEx(`camerashake add ${name} ${res.cmd}`);
                     if (rst.success) {
                         out.success(rst.output);
                     } else {
@@ -280,6 +298,7 @@ mc.listen("onServerStarted", () => {
 
                 // me子命令，查询自身坐标信息
                 case "me":
+                    out.addMessage(`LLSE-PCamera v${VERSION}`);
                     var pos = ori.player.pos;
                     var ang = ori.player.direction;
                     out.addMessage(`${Format.Aqua}x:${Format.Clear} ${pos.x}`);
@@ -313,16 +332,16 @@ mc.listen("onServerStarted", () => {
                         case "view":
                             // 判断是不是访问别人的点位
                             var owner;
-                            if (res.p_owner != null) {
-                                if (res.p_owner.length == 0) {
+                            if (res.owner != null) {
+                                if (res.owner.length == 0) {
                                     out.error("找不到玩家对象");
                                     return;
                                 }
-                                if (res.p_owner.length > 1) {
+                                if (res.owner.length > 1) {
                                     out.error("不可选中多个玩家");
                                     return;
                                 }
-                                owner = res.p_owner[0].name;
+                                owner = res.owner[0].name;
                                 if (name != owner && !PUB_POINT) {
                                     out.error("未开启此功能");
                                     return;
@@ -419,9 +438,9 @@ mc.listen("onServerStarted", () => {
                             if (!File.checkIsDir(path)) {
                                 File.mkdir(path)
                             }
-                            db.set(`${name}.edit`, res.s_name);
-                            if (File.exists(path + `${res.s_name}.txt`) && !File.checkIsDir(path + `${res.s_name}.txt`)) {
-                                var f = File.readFrom(path + `${res.s_name}.txt`);
+                            db.set(`${name}.edit`, res.name);
+                            if (File.exists(path + `${res.name}.txt`) && !File.checkIsDir(path + `${res.name}.txt`)) {
+                                var f = File.readFrom(path + `${res.name}.txt`);
                                 if (f != null) {
                                     var fa = f.split(/\r?\n|(?<!\n)\r/);
                                     fa.unshift(fa.length+1);
@@ -435,7 +454,7 @@ mc.listen("onServerStarted", () => {
 
                         // rm选项，删除脚本
                         case "rm":
-                            var path = DATAPATH + `scripts\\${name}\\${res.s_name}.txt`;
+                            var path = DATAPATH + `scripts\\${name}\\${res.name}.txt`;
                             if (File.exists(path) && !File.checkIsDir(path)) {
                                 var ok = File.delete(path);
                                 if (ok) {
@@ -450,12 +469,12 @@ mc.listen("onServerStarted", () => {
                         
                         // cat选项，列出脚本内容
                         case "cat":
-                            var path = DATAPATH + `scripts\\${name}\\${res.s_name}.txt`;
+                            var path = DATAPATH + `scripts\\${name}\\${res.name}.txt`;
                             if (File.exists(path) && !File.checkIsDir(path)) {
                                 var f = File.readFrom(path);
                                 if (f != null) {
                                     var fa = f.split(/\r?\n|(?<!\n)\r/);
-                                    out.addMessage(`---Script: ${res.s_name}---`);
+                                    out.addMessage(`---Script: ${res.name}---`);
                                     for (var i in fa) {
                                         out.addMessage(`${Format.Aqua}${parseInt(i)+1} |${Format.Clear} ${fa[i]}`);
                                     }
@@ -473,16 +492,16 @@ mc.listen("onServerStarted", () => {
                             // 这一段很多源码直接照搬上面的view
                             // 判断是不是访问别人的脚本
                             var owner;
-                            if (res.s_owner != null) {
-                                if (res.s_owner.length == 0) {
+                            if (res.owner != null) {
+                                if (res.owner.length == 0) {
                                     out.error("找不到玩家对象");
                                     return;
                                 }
-                                if (res.s_owner.length > 1) {
+                                if (res.owner.length > 1) {
                                     out.error("不可选中多个玩家");
                                     return;
                                 }
-                                owner = res.s_owner[0].name;
+                                owner = res.owner[0].name;
                                 if (name != owner && !PUB_SCRIPT) {
                                     out.error("未开启此功能");
                                     return;
@@ -504,17 +523,17 @@ mc.listen("onServerStarted", () => {
                                         if (pl != null) {
                                             pl.runcmd(`pc script exec ${scr} 0 ${own}`);
                                         }
-                                    }, res.delay, ori.player.uniqueId, res.s_name, owner);
+                                    }, res.delay, ori.player.uniqueId, res.name, owner);
                                     return;
                                 }
                             }
-                            var path = DATAPATH + `scripts\\${name}\\${res.s_name}.txt`;
+                            var path = DATAPATH + `scripts\\${name}\\${res.name}.txt`;
                             if (File.exists(path) && !File.checkIsDir(path)) {
                                 // 读取文件
                                 var f = File.readFrom(path);
                                 if (f != null) {
                                     var fa = f.split(/\r?\n|(?<!\n)\r/);
-                                    out.addMessage(`开始读取并执行Script: ${res.s_name}`);
+                                    out.addMessage(`开始读取并执行Script: ${res.name}`);
                                     // 加锁
                                     db.set(`${name}.exec`, true);
                                     // 丢给“解释器”就完事了
@@ -595,7 +614,7 @@ mc.listen("onChat", (pl, msg) => {
             for (var i = 1; i < arr.length; i++) {
                 pl.tell(`${Format.Aqua}${i} |${Format.Clear} ${arr[i]}`);
             }
-            pl.tell(`${Format.Aqua}--- ${arr[0]} Line(s) ---${Format.Clear}`);
+            pl.tell(`${Format.Aqua}--- ${arr.length-1} Line(s) ---${Format.Clear}`);
         } else if (msg == ":m") {
             // 查询自己当前位置
             var pos = pl.pos;

@@ -68,11 +68,11 @@
 
 + `cam` 同上述 `pc eval`
 
-+ `head` 在遇到下一个 `headend` 或结尾前使用相同前缀
++ `head` 在遇到下一个 `end` 或结尾前使用相同前缀
 
-+ `tail` 在遇到下一个 `tailend` 或结尾前使用相同后缀
++ `tail` 在遇到下一个 `end` 或结尾前使用相同后缀
 
-+ `autodelay` 在遇到下一个 `autodelayend` 或结尾前每一条指令后都执行delay
++ `autodelay` 在遇到下一个 `end` 或结尾前每一条指令后都执行delay
 
 ## 编辑脚本
 

@@ -1,11 +1,11 @@
 // 注册插件
-ll.registerPlugin("LLSE-PCamera", "LLSE Programmable Camera 可编程视角相机", [1, 3, 0, Version.Dev], {
+ll.registerPlugin("LLSE-PCamera", "LLSE Programmable Camera 可编程视角相机", [1, 3, 0, Version.Release], {
     "Author": "odorajbotoj"
 });
 
 // 数据路径
 const DATAPATH = ".\\plugins\\LLSE-PCameraData\\";
-const VERSION = "1.3.0-Dev";
+const VERSION = "1.3.0-Rel";
 
 // 数据库
 const db = new KVDatabase(DATAPATH + "db");
@@ -429,6 +429,7 @@ mc.listen("onServerStarted", () => {
                                 out.error("点位未定义");
                                 return;
                             }
+                            var p = s.split(" ");
                             var rst = mc.runcmdEx(`execute as ${name} in ${DIM[parseInt(p[3])]} run camera @s set minecraft:free pos ${p[0]} ${p[1]} ${p[2]} rot ${p[4]} ${p[5]}`);
                             if (rst.success) {
                                 out.success(rst.output);

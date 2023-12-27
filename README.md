@@ -4,13 +4,19 @@
 
 + Programmable Camera 可编程视角相机 LiteLoaderBDS的Javascript插件
 
++ **重要：由于文件及部分内容重命名，您可能需要更改某些文件，或对文件夹重命名**
+
++ **重要：现行脚本中，延时统一使用秒作为单位。您可能需要修改您的脚本**
+
++ *提示：根据个人测试得出结论，玩家视距范围之外的相机将不会加载画面*
+
 ## 安装
 
-+ 将 `ProgrammableCamera.js` 放进 `plugins/` 文件夹就行
++ 将 `LLSE-PCamera.js` 放进 `plugins/` 文件夹就行
 
 ## 配置
 
-+ 在至少运行过一次后，生成的配置文件位于 `plugins/ProgrammableCameraData/conf.json`
++ 在至少运行过一次后，生成的配置文件位于 `plugins/LLSE-PCameraData/conf.json`
 
 + `public_point` 决定是否可以查看他人点位。应为 `0` 或 `1`
 
@@ -20,7 +26,7 @@
 
 + `pc clear` 清除所有相机效果，中断执行脚本
 
-+ `pc eval <text>` 相当于 `camera @s <text>`
++ `pc eval <text> [dimension]` 相当于带维度的 `camera @s <text>` ，但是这个维度并没有什么用。
 
 + `pc me` 打印当前所处坐标与视角信息
 
@@ -46,7 +52,7 @@
 
 ## 脚本
 
-+ `delay ms` 延时（毫秒）。语句操作不会阻塞等待结果，故延时十分重要。
++ `delay s` 延时（秒）。语句操作不会阻塞等待结果，故延时十分重要。
 
 + `title "content" type fadeInTime stayTime fadeOutTime` content为标题内容（支持反斜杠转义双引号），末尾三个参数分别是淡入、停留、淡出时间。type取值如下：
 

@@ -1,11 +1,11 @@
 // 注册插件
-ll.registerPlugin("ProgrammableCamera", "Programmable Camera 可编程视角相机", [1, 2, 1, Version.Release], {
+ll.registerPlugin("LLSE-PCamera", "LLSE Programmable Camera 可编程视角相机", [1, 3, 0, Version.Dev], {
     "Author": "odorajbotoj"
 });
 
 // 数据路径
-const DATAPATH = ".\\plugins\\ProgrammableCameraData\\";
-const VERSION = "1.2.1";
+const DATAPATH = ".\\plugins\\LLSE-PCameraData\\";
+const VERSION = "1.3.0-Dev";
 
 // 数据库
 const db = new KVDatabase(DATAPATH + "db");
@@ -17,6 +17,9 @@ const PUB_SCRIPT = conf.init("public_script", false); // 是否允许执行别�
 
 // 创建文件夹
 File.mkdir(DATAPATH + "scripts");
+
+// 其他常量
+const DIM = ["overworld", "nether", "the_end"];
 
 // 这个函数是从网上搜索到的。自己理解了之后贴出来了
 function setTimeoutWithArgs(callback, timeout, param) {
@@ -61,20 +64,27 @@ function readStr(str) {
 
 // “解释器”主逻辑
 const sleep = (delay) => new Promise((resolve) => setTimeout(resolve, delay))
-async function scriptInterpret(sArr, id, name) {
+async function scriptInterpret(sArr, id, name, dim) {
     // 这一部分重构过了，减少异步压力
+    // 后来又重写了部分，减少了动态获取pl的次数，减小服务器压力
     var headStack = new Array();
     var tailStack = new Array();
     var delayStack = new Array();
     var endStack = new Array();
+    var suc = true;
+    var otp = "";
     for (var i in sArr) {
-        // 重新获取player
-        var pl = mc.getPlayer(id);
-        if (pl == null) {
+        // 决定是否继续执行
+        if (!suc) {
+            var pl = mc.getPlayer(id);
+            if (pl != null) {
+                // 决定是否产生输出
+                pl.tell(otp);
+            }
             break;
         }
         // 检查lock状态
-        var lock = db.get(`${pl.name}.exec`);
+        var lock = db.get(`${name}.exec`);
         if (lock == null) {
             break;
         }
@@ -93,14 +103,25 @@ async function scriptInterpret(sArr, id, name) {
             tailStack.push(sArr[i].substring(5));
             endStack.push("tail");
             continue;
-        } else if (sArr[i].startsWith("autodelay ")) {
-            // 支持autodelay，以简化输入
-            var dems = parseInt(sArr[i].substring(10));
-            if (isNaN(dems)) {
-                pl.tell(`${Format.Red}Error: 无效的输入在第 ${parseInt(i)+1} 行${Format.Clear}`);
+        } else if (sArr[i].startsWith("setdim ")) {
+            // 支持setdim设置维度
+            var d = parseInt(sArr[i].substring(7));
+            if (d != 0 && d != 1 && d != 2) {
+                suc = false;
+                otp = `${Format.Red}Error: 无效的输入在第 ${parseInt(i)+1} 行${Format.Clear}`;
                 continue;
             }
-            delayStack.push(dems);
+            dim = d;
+            continue;
+        } else if (sArr[i].startsWith("autodelay ")) {
+            // 支持autodelay，以简化输入
+            var des = parseFloat(sArr[i].substring(10));
+            if (isNaN(des)) {
+                suc = false;
+                otp = `${Format.Red}Error: 无效的输入在第 ${parseInt(i)+1} 行${Format.Clear}`;
+                continue;
+            }
+            delayStack.push(des);
             endStack.push("delay");
             continue;
         } else if (sArr[i] == "end") {
@@ -120,12 +141,13 @@ async function scriptInterpret(sArr, id, name) {
             continue;
         } else if (sArr[i].startsWith("delay ")) {
             // 设置延时，单位毫秒
-            var dems = parseInt(sArr[i].substring(6));
-            if (isNaN(dems)) {
-                pl.tell(`${Format.Red}Error: 无效的输入在第 ${parseInt(i)+1} 行${Format.Clear}`);
+            var des = parseFloat(sArr[i].substring(6));
+            if (isNaN(des)) {
+                suc = false;
+                otp = `${Format.Red}Error: 无效的输入在第 ${parseInt(i)+1} 行${Format.Clear}`;
                 continue;
             }
-            await sleep(dems);
+            await sleep(des * 1000);
             continue;
         }
         // 处理功能语句
@@ -137,40 +159,68 @@ async function scriptInterpret(sArr, id, name) {
             var acti = readStr(s.substring(6));
             var para = acti[1].trim().split(" ");
             if (para.length != 4) {
-                pl.tell(`${Format.Red}Error: 错误的参数数目在第 ${parseInt(i)+1} 行${Format.Clear}`);
+                suc = false;
+                otp = `${Format.Red}Error: 错误的参数数目在第 ${parseInt(i)+1} 行${Format.Clear}`;
                 continue;
             }
             var p = [parseInt(para[0]), parseInt(para[1]), parseInt(para[2]), parseInt(para[3])];
             if (isNaN(p[0]) || isNaN(p[1]) || isNaN(p[2]) || isNaN(p[3])) {
-                pl.tell(`${Format.Red}Error: 无效的输入在第 ${parseInt(i)+1} 行${Format.Clear}`);
+                suc = false;
+                otp = `${Format.Red}Error: 无效的输入在第 ${parseInt(i)+1} 行${Format.Clear}`;
                 continue;
             }
-            pl.setTitle(acti[0], p[0], p[1], p[2], p[3]);
+            var pl = mc.getPlayer(id);
+            if (pl != null) {
+                pl.setTitle(acti[0], p[0], p[1], p[2], p[3]);
+            } else {
+                suc = false;
+                continue;
+            }
         } else if (s.startsWith("toast ")) {
             // 发送一个toast
             var acti = readStr(s.substring(6));
             acti[1] = readStr(acti[1])[0];
-            pl.sendToast(acti[0], acti[1]);
+            var pl = mc.getPlayer(id);
+            if (pl != null) {
+                pl.sendToast(acti[0], acti[1]);
+            } else {
+                suc = false;
+                continue;
+            }
         } else if (s.startsWith("shake ")) {
             // 执行camerashake操作
             var acti = s.substring(6);
-            pl.runcmd(`pc shake ${acti}`);
+            var rst = mc.runcmdEx(`camerashake add ${name} ${acti}`);
+            suc = rst.success;
+            otp = rst.output;
+            if (!suc) {
+                continue;
+            }
         } else if (s.startsWith("cam ")) {
             // 执行camera操作
             var acti = s.substring(4);
-            pl.runcmd(`pc eval ${acti}`);
+            var rst = mc.runcmdEx(`execute as ${name} in ${DIM[dim]} run camera @s ${acti}`);
+            suc = rst.success;
+            otp = rst.output;
+            otp = rst.output;
+            if (!suc) {
+                continue;
+            }
         } else {
-            pl.tell(`${Format.Red}Error: 未知的操作在第 ${parseInt(i)+1} 行${Format.Clear}`);
+            suc = false;
+            otp = `${Format.Red}Error: 未知的操作在第 ${parseInt(i)+1} 行${Format.Clear}`;
             continue;
         }
         // autodelay
         if (delayStack.length != 0) {
-            await sleep(delayStack[delayStack.length-1]);
+            await sleep(delayStack[delayStack.length-1] * 1000);
         }
-        delete pl;
     }
     if (endStack.length != 0) {
-        pl.tell(`${Format.Yellow}Warning: 有未闭合的代码块${Format.Clear}`);
+        var pl = mc.getPlayer(id);
+        if (pl != null) {
+            pl.tell(`${Format.Yellow}Warning: 有未闭合的代码块${Format.Clear}`);
+        }
     }
     db.delete(`${name}.exec`);
 }
@@ -179,7 +229,7 @@ async function scriptInterpret(sArr, id, name) {
 
 mc.listen("onServerStarted", () => {
     // 注册指令pc, 别名cam
-    const pc_cmd = mc.newCommand("pc", `${Format.Aqua}Programmable Camera 可编程视角相机${Format.Clear}`, PermType.Any, 0x80, "cam");
+    const pc_cmd = mc.newCommand("pc", `${Format.Aqua}LLSE-PCamera 可编程视角相机${Format.Clear}`, PermType.Any, 0x80, "cam");
 
     // pc clear
     pc_cmd.setEnum("ClearAction", ["clear"]);
@@ -191,13 +241,15 @@ mc.listen("onServerStarted", () => {
     pc_cmd.mandatory("action", ParamType.Enum, "QueryAction", "QueryAction", 1);
     pc_cmd.overload(["QueryAction"]);
 
-    // pc eval <cam_cmd>
+    // pc eval <cmd>
     pc_cmd.setEnum("EvalAction", ["eval"]);
     pc_cmd.mandatory("action", ParamType.Enum, "EvalAction", "EvalAction", 1);
-    pc_cmd.mandatory("cmd", ParamType.RawText);
-    pc_cmd.overload(["EvalAction", "cmd"]);
+    pc_cmd.setEnum("Dimension", DIM);
+    pc_cmd.optional("dim", ParamType.Enum, "Dimension", "Dimension", 1);
+    pc_cmd.mandatory("cmd", ParamType.String);
+    pc_cmd.overload(["EvalAction", "cmd", "dim"]);
 
-    // pc shake <cam_cmd>
+    // pc shake <cmd>
     pc_cmd.setEnum("ShakeAction", ["shake"]);
     pc_cmd.mandatory("action", ParamType.Enum, "ShakeAction", "ShakeAction", 1);
     pc_cmd.overload(["ShakeAction", "cmd"]);
@@ -274,9 +326,14 @@ mc.listen("onServerStarted", () => {
                     out.success("已清除所有相机效果");
                     break;
 
-                // eval选项, 相当于下放camera ${name}指令
+                // eval选项, 相当于下放camera指令
                 case "eval":
-                    var rst = mc.runcmdEx(`camera ${name} ${res.cmd}`);
+                    var rst;
+                    if (res.dim == null || res.dim == "") {
+                        rst = mc.runcmdEx(`execute as ${name} run camera @s ${res.cmd}`);
+                    } else {
+                        rst = mc.runcmdEx(`execute as ${name} in ${res.dim} run camera @s ${res.cmd}`);
+                    }
                     if (rst.success) {
                         out.success(rst.output);
                     } else {
@@ -285,7 +342,7 @@ mc.listen("onServerStarted", () => {
                     }
                     break;
 
-                // shake选项, 相当于下放camerashake add ${name}指令
+                // shake选项, 相当于下放camerashake add指令
                 case "shake":
                     var rst = mc.runcmdEx(`camerashake add ${name} ${res.cmd}`);
                     if (rst.success) {
@@ -372,12 +429,7 @@ mc.listen("onServerStarted", () => {
                                 out.error("点位未定义");
                                 return;
                             }
-                            var p = s.split(" ");
-                            if (ori.player.pos.dimid.toString() != p[3]) {
-                                out.error("维度不同");
-                                return;
-                            }
-                            var rst = mc.runcmdEx(`camera ${name} set minecraft:free pos ${p[0]} ${p[1]} ${p[2]} rot ${p[4]} ${p[5]}`);
+                            var rst = mc.runcmdEx(`execute as ${name} in ${DIM[parseInt(p[3])]} run camera @s set minecraft:free pos ${p[0]} ${p[1]} ${p[2]} rot ${p[4]} ${p[5]}`);
                             if (rst.success) {
                                 out.success(rst.output);
                             } else {
@@ -388,17 +440,9 @@ mc.listen("onServerStarted", () => {
 
                         // rm选项，删除点位信息
                         case "rm":
-                            var ok1 = db.delete(`${name}.${res.point}`);
-                            if (!ok1) {
-                                out.error("无法删除点位数据");
-                            }
-                            var ok2 = db.delete(`${name}.${res.point}c`);
-                            if (!ok2) {
-                                out.error("无法删除点位注释");
-                            }
-                            if (ok1 && ok2) {
-                                out.success("成功删除点位");
-                            }
+                            db.delete(`${name}.${res.point}`);
+                            db.delete(`${name}.${res.point}c`);
+                            out.success("成功删除点位");
                             break;
 
                         // ls选项，列出玩家所有点位
@@ -537,7 +581,7 @@ mc.listen("onServerStarted", () => {
                                     // 加锁
                                     db.set(`${name}.exec`, true);
                                     // 丢给“解释器”就完事了
-                                    scriptInterpret(fa, ori.player.uniqueId.toString(), name);
+                                    scriptInterpret(fa, ori.player.uniqueId.toString(), name, ori.player.pos.dimid);
                                     out.success(`任务已添加`);
                                 } else {
                                     out.error("读取失败");

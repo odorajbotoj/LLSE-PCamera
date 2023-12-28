@@ -6,7 +6,7 @@
 
 + **重要：由于文件及部分内容重命名，您可能需要更改某些文件，或对文件夹重命名**
 
-+ **重要：现行脚本中，延时统一使用秒作为单位。您可能需要修改您的脚本**
++ **重要：现行命令及脚本中，延时统一使用秒作为单位。您可能需要修改您的脚本**
 
 + *提示：根据个人测试得出结论，玩家视距范围之外的相机将不会加载画面*
 
@@ -26,7 +26,7 @@
 
 + `pc clear` 清除所有相机效果，中断执行脚本
 
-+ `pc eval <text> [dimension]` 相当于带维度的 `camera @s <text>` ，但是这个维度并没有什么用。
++ `pc eval <text>` 相当于 `camera @s <text>`
 
 + `pc me` 打印当前所处坐标与视角信息
 
@@ -37,6 +37,8 @@
 + `pc point save <Point> [text]` 将当前位置保存到点位（共p1-p8有八个），可以加注释
 
 + `pc point view <Point> [int] [target]` 查看一个点位。可以设置延时（毫秒）。若 `public_point` 为真，则可以通过指定一个target查看他人的点位
+
++ `pc preset circle2d <origin> <radius> <fromAng> <toAng> <steps> <timePerStep> <facing> <name>` 以origin为圆心，radius为半径，从fromAng到toAng，以timePerStep为延时走steps步，面向facing坐标，生成圆弧轨迹并追加写入name脚本中
 
 + `pc script cat <string>` 列出一个脚本的内容
 
@@ -79,6 +81,8 @@
 + `tail` 在遇到下一个 `end` 或结尾前使用相同后缀
 
 + `autodelay` 在遇到下一个 `end` 或结尾前每一条指令后都执行delay
+
++ `setdim int` 设置脚本执行的维度，不在同一维度的玩家将无法执行其之后的内容。建议设置在开头。可选值为0（主世界），1（地狱），2（末地）
 
 ## 编辑脚本
 

@@ -1,11 +1,11 @@
 // 注册插件
-ll.registerPlugin("LLSE-PCamera", "LLSE Programmable Camera 可编程视角相机", [1, 4, 0, Version.Release], {
+ll.registerPlugin("LLSE-PCamera", "LLSE Programmable Camera 可编程视角相机", [1, 4, 1, Version.Release], {
     "Author": "odorajbotoj"
 });
 
 // 数据路径
 const DATAPATH = ".\\plugins\\LLSE-PCameraData\\";
-const VERSION = "1.4.0-Rel";
+const VERSION = "1.4.1-Rel";
 
 // 数据库
 const db = new KVDatabase(DATAPATH + "db");
@@ -605,7 +605,7 @@ mc.listen("onServerStarted", () => {
                                     return;
                                 }
                             }
-                            var path = DATAPATH + `scripts\\${name}\\${res.name}.txt`;
+                            var path = DATAPATH + `scripts\\${owner}\\${res.name}.txt`;
                             if (File.exists(path) && !File.checkIsDir(path)) {
                                 // 读取文件
                                 var f = File.readFrom(path);

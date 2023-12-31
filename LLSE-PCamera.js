@@ -1,11 +1,11 @@
 // 注册插件
-ll.registerPlugin("LLSE-PCamera", "LLSE Programmable Camera 可编程视角相机", [1, 4, 1, Version.Release], {
+ll.registerPlugin("LLSE-PCamera", "LLSE Programmable Camera 可编程视角相机", [1, 4, 2, Version.Release], {
     "Author": "odorajbotoj"
 });
 
 // 数据路径
 const DATAPATH = ".\\plugins\\LLSE-PCameraData\\";
-const VERSION = "1.4.1-Rel";
+const VERSION = "1.4.2-Rel";
 
 // 数据库
 const db = new KVDatabase(DATAPATH + "db");
@@ -552,11 +552,11 @@ mc.listen("onServerStarted", () => {
                                 var f = File.readFrom(path);
                                 if (f != null) {
                                     var fa = f.split(/\r?\n|(?<!\n)\r/);
-                                    out.addMessage(`---Script: ${res.name}---`);
                                     for (var i in fa) {
-                                        out.addMessage(`${Format.Aqua}${parseInt(i)+1} |${Format.Clear} ${fa[i]}`);
+                                        fa[i] = (`${Format.Aqua}${parseInt(i)+1} |${Format.Clear} ${fa[i]}`);
                                     }
-                                    out.success(`${Format.Aqua}---EOF---${Format.Clear}`);
+                                    var fm = mc.newSimpleForm().setTitle(res.name).setContent(fa.join("\n"));
+                                    ori.player.sendForm(fm, (_pl, _id) => {return});
                                 } else {
                                     out.error("读取失败");
                                 }
@@ -691,27 +691,18 @@ mc.listen("onChat", (pl, msg) => {
             db.delete(`${name}.edit`);
             db.delete(`${name}.buf`);
             pl.sendToast("退出", "您已退出编辑模式");
-        } else if (msg == ":w") {
-            // 写入文件
-            var arr = db.get(`${name}.buf`);
-            if (arr == null) {
-                pl.sendToast("失败", "缓冲区为空");
-                return false;
-            }
-            File.writeTo(DATAPATH + `scripts\\${name}\\${efn}.txt`,arr.slice(1).join("\n").trim());
-            pl.sendToast("成功", "文件已写入");
         } else if (msg == ":p") {
             // 打印缓冲区
-            pl.tell(`${Format.Aqua}--- 缓冲区 ---${Format.Clear}`);
             var arr = db.get(`${name}.buf`);
             if (arr == null) {
                 pl.sendToast("失败", "缓冲区为空");
                 return false;
             }
+            pl.tell(`${Format.Aqua}---缓冲区---${Format.Clear}`);
             for (var i = 1; i < arr.length; i++) {
                 pl.tell(`${Format.Aqua}${i} |${Format.Clear} ${arr[i]}`);
             }
-            pl.tell(`${Format.Aqua}--- ${arr.length-1} Line(s) ---${Format.Clear}`);
+            pl.tell(`${Format.Aqua}---EOF---${Format.Clear}`);
         } else if (msg == ":m") {
             // 查询自己当前位置
             var pos = pl.pos;
@@ -722,6 +713,22 @@ mc.listen("onChat", (pl, msg) => {
             pl.tell(`${Format.Blue}维度id:${Format.Clear} ${pos.dimid}`);
             pl.tell(`${Format.Green}俯仰角:${Format.Clear} ${ang.pitch}`);
             pl.tell(`${Format.Green}旋转角:${Format.Clear} ${ang.yaw}`);
+        } else if (msg == ":w" || msg.startsWith(":w ")) {
+            // 写入文件
+            var na;
+            if (msg != ":w") {
+                na = msg.substring(3);
+            }
+            var arr = db.get(`${name}.buf`);
+            if (arr == null) {
+                pl.sendToast("失败", "缓冲区为空");
+                return false;
+            }
+            if (na != "") {
+                efn = na;
+            }
+            File.writeTo(DATAPATH + `scripts\\${name}\\${efn}.txt`,arr.slice(1).join("\n").trim());
+            pl.sendToast("成功", "文件已写入");
         } else if (msg.startsWith(":d ")) {
             // 删除一行
             var ln = parseInt(msg.substring(3));

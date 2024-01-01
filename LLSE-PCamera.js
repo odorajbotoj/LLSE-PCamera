@@ -1,11 +1,11 @@
 // 注册插件
-ll.registerPlugin("LLSE-PCamera", "LLSE Programmable Camera 可编程视角相机", [1, 4, 2, Version.Release], {
+ll.registerPlugin("LLSE-PCamera", "LLSE Programmable Camera 可编程视角相机", [1, 5, 0, Version.Release], {
     "Author": "odorajbotoj"
 });
 
 // 数据路径
 const DATAPATH = ".\\plugins\\LLSE-PCameraData\\";
-const VERSION = "1.4.2-Rel";
+const VERSION = "1.5.0-Rel";
 
 // 数据库
 const db = new KVDatabase(DATAPATH + "db");
@@ -76,6 +76,7 @@ async function scriptInterpret(sArr, id, name, dim) {
     for (var i in sArr) {
         // 决定是否继续执行
         if (!suc) {
+            endStack = [];
             var pl = mc.getPlayer(id);
             if (pl != null) {
                 // 决定是否产生输出
@@ -86,6 +87,7 @@ async function scriptInterpret(sArr, id, name, dim) {
         // 检查lock状态
         var lock = db.get(`${name}.exec`);
         if (lock == null) {
+            endStack = [];
             break;
         }
         // 跳过空行
@@ -232,6 +234,9 @@ async function scriptInterpret(sArr, id, name, dim) {
 // circle2d
 function circle2d(name, res) {
     // 画圆
+    if (res.steps == 0) {
+        return;
+    }
     File.writeLine(DATAPATH + `scripts\\${name}\\${res.name}.txt`, `head cam set minecraft:free ease ${res.timePerStep} linear pos `);
     File.writeLine(DATAPATH + `scripts\\${name}\\${res.name}.txt`, `tail facing ${res.facing.x} ${res.facing.y} ${res.facing.z}`);
     File.writeLine(DATAPATH + `scripts\\${name}\\${res.name}.txt`, `autodelay ${res.timePerStep}`);
@@ -247,6 +252,29 @@ function circle2d(name, res) {
     File.writeLine(DATAPATH + `scripts\\${name}\\${res.name}.txt`, "end");
 }
 
+// circular_helix
+function circular_helix(name, res) {
+    // 圆柱螺线
+    if (res.steps == 0) {
+        return;
+    }
+    File.writeLine(DATAPATH + `scripts\\${name}\\${res.name}.txt`, `head cam set minecraft:free ease ${res.timePerStep} linear pos `);
+    File.writeLine(DATAPATH + `scripts\\${name}\\${res.name}.txt`, `autodelay ${res.timePerStep}`);
+    var dif = res.toAng - res.fromAng;
+    var stp = dif / res.steps;
+    var hei = res.height / res.steps;
+    for (var i = 0; i <= res.steps; i++) {
+        // 计算点位
+        var rad = (res.fromAng + i*stp) * Math.PI / 180;
+        var r = 180 + i * stp;
+        if (r > 180) {
+            r -= 360;
+        }
+        File.writeLine(DATAPATH + `scripts\\${name}\\${res.name}.txt`, `${res.origin.x - Math.sin(rad)*res.radius} ${res.origin.y + i*hei} ${res.origin.z + Math.cos(rad)*res.radius} rot 0 ${r}`);
+    }
+    File.writeLine(DATAPATH + `scripts\\${name}\\${res.name}.txt`, "end");
+    File.writeLine(DATAPATH + `scripts\\${name}\\${res.name}.txt`, "end");
+}
 mc.listen("onServerStarted", () => {
     // 注册指令pc, 别名cam
     const pc_cmd = mc.newCommand("pc", `${Format.Aqua}LLSE-PCamera 可编程视角相机${Format.Clear}`, PermType.Any, 0x80, "cam");
@@ -340,6 +368,12 @@ mc.listen("onServerStarted", () => {
     pc_cmd.mandatory("timePerStep", ParamType.Float);
     pc_cmd.mandatory("facing", ParamType.Vec3);
     pc_cmd.overload(["PresetAction", "PresetCircle2dAction", "origin", "radius", "fromAng", "toAng", "steps", "timePerStep", "facing", "name"]);
+
+    // pc preset circula_helix <origin> <radius> <fromAng> <toAng> <steps> <timePerStep> <height> <name>
+    pc_cmd.setEnum("PresetCircularHelixAction", ["circular_helix"]);
+    pc_cmd.mandatory("presetAction", ParamType.Enum, "PresetCircularHelixAction", "PresetCircularHelixAction", 1);
+    pc_cmd.mandatory("height", ParamType.Float);
+    pc_cmd.overload(["PresetAction", "PresetCircularHelixAction", "origin", "radius", "fromAng", "toAng", "steps", "timePerStep", "height", "name"]);
 
     // 设置回调函数
     pc_cmd.setCallback((_cmd, ori, out, res) => {
@@ -481,24 +515,26 @@ mc.listen("onServerStarted", () => {
 
                         case "ls":
                             // ls选项，列出玩家所有点位
-                            out.addMessage(`${Format.Gold}玩家 ${name} 的点位信息:${Format.Clear}`);
+                            var sa = new Array();
                             for (var i = 1; i < 9; i++) {
                                 var s = db.get(`${name}.p${i}`);
                                 if (s == null) {
-                                    out.addMessage(`${Format.MinecoinGold}点位p${i}: Undefined.${Format.Clear}`);
+                                    sa.push(`${Format.MinecoinGold}点位p${i}: Undefined.${Format.Clear}`);
                                     continue;
                                 }
                                 var sa = s.split(" ");
                                 var c = db.get(`${name}.p${i}c`);
-                                out.addMessage(`${Format.Yellow}点位p${i}:${Format.Clear}`);
-                                out.addMessage(`${Format.Aqua}x:${Format.Clear} ${sa[0]}`);
-                                out.addMessage(`${Format.Aqua}y:${Format.Clear} ${sa[1]}`);
-                                out.addMessage(`${Format.Aqua}z:${Format.Clear} ${sa[2]}`);
-                                out.addMessage(`${Format.Blue}维度id:${Format.Clear} ${sa[3]}`);
-                                out.addMessage(`${Format.Green}俯仰角:${Format.Clear} ${sa[4]}`);
-                                out.addMessage(`${Format.Green}旋转角:${Format.Clear} ${sa[5]}`);
-                                out.addMessage(`${Format.Gray}注释:${Format.Clear} ${c}`);
+                                sa.push(`${Format.Yellow}点位p${i}:${Format.Clear}`);
+                                sa.push(`${Format.Aqua}x:${Format.Clear} ${sa[0]}`);
+                                sa.push(`${Format.Aqua}y:${Format.Clear} ${sa[1]}`);
+                                sa.push(`${Format.Aqua}z:${Format.Clear} ${sa[2]}`);
+                                sa.push(`${Format.Blue}维度id:${Format.Clear} ${sa[3]}`);
+                                sa.push(`${Format.Green}俯仰角:${Format.Clear} ${sa[4]}`);
+                                sa.push(`${Format.Green}旋转角:${Format.Clear} ${sa[5]}`);
+                                sa.push(`${Format.Gray}注释:${Format.Clear} ${c}`);
                             }
+                            var fm = mc.newSimpleForm().setTitle(`${Format.Gold}玩家 ${name} 的点位信息:${Format.Clear}`).setContent(sa.join("\n"));
+                            ori.player.sendForm(fm, (_pl, _id) => {return});
                             break;
 
                         default:
@@ -631,11 +667,11 @@ mc.listen("onServerStarted", () => {
                             if (File.exists(path) && File.checkIsDir(path)) {
                                 var f = File.getFilesList(path);
                                 if (f.length != 0) {
-                                    out.addMessage(`---Scripts:---`);
                                     for (var i in f) {
-                                        out.addMessage(`${Format.Aqua}${parseInt(i)+1} |${Format.Clear} ${f[i].slice(0, -4)}`);
+                                        f[i] = `${Format.Aqua}${parseInt(i)+1} |${Format.Clear} ${f[i].slice(0, -4)}`;
                                     }
-                                    out.success(`${Format.Aqua}---END---${Format.Clear}`)
+                                    var fm = mc.newSimpleForm().setTitle("Scripts").setContent(f.join("\n"));
+                                    ori.player.sendForm(fm, (_pl, _id) => {return});
                                 } else {
                                     out.error("目录下没有脚本");
                                 }
@@ -660,8 +696,19 @@ mc.listen("onServerStarted", () => {
                                 File.mkdir(path)
                             }
                             File.writeLine(path + `${res.name}.txt`,"# circle2d vvv")
-                            circle2d(name, res, out);
+                            circle2d(name, res);
                             File.writeLine(path + `${res.name}.txt`,"# circle2d ^^^")
+                            out.success("已写入脚本");
+                            break;
+                        case "circular_helix":
+                            // circularHelix选项，提供基础的圆柱螺线操作
+                            var path = DATAPATH + `scripts\\${name}\\`;
+                            if (!File.checkIsDir(path)) {
+                                File.mkdir(path)
+                            }
+                            File.writeLine(path + `${res.name}.txt`,"# circular_helix vvv")
+                            circular_helix(name, res);
+                            File.writeLine(path + `${res.name}.txt`,"# circular_helix ^^^")
                             out.success("已写入脚本");
                             break;
                         default:
@@ -669,6 +716,7 @@ mc.listen("onServerStarted", () => {
                             out.error("pc: preset: 未知的操作");
                     }
                     break;
+
                 default:
                     // 无匹配项则报错
                     out.error("pc: 未知的操作");
@@ -690,7 +738,7 @@ mc.listen("onChat", (pl, msg) => {
         } else if (msg == ":q") {
             db.delete(`${name}.edit`);
             db.delete(`${name}.buf`);
-            pl.sendToast("退出", "您已退出编辑模式");
+            pl.tell("已退出编辑模式");
         } else if (msg == ":p") {
             // 打印缓冲区
             var arr = db.get(`${name}.buf`);
@@ -728,7 +776,7 @@ mc.listen("onChat", (pl, msg) => {
                 efn = na;
             }
             File.writeTo(DATAPATH + `scripts\\${name}\\${efn}.txt`,arr.slice(1).join("\n").trim());
-            pl.sendToast("成功", "文件已写入");
+            pl.tell("文件已写入");
         } else if (msg.startsWith(":d ")) {
             // 删除一行
             var ln = parseInt(msg.substring(3));

@@ -1,11 +1,11 @@
 // 注册插件
-ll.registerPlugin("LLSE-PCamera", "LLSE Programmable Camera 可编程视角相机", [1, 5, 0, Version.Release], {
+ll.registerPlugin("LLSE-PCamera", "LLSE Programmable Camera 可编程视角相机", [1, 5, 1, Version.Release], {
     "Author": "odorajbotoj"
 });
 
 // 数据路径
 const DATAPATH = ".\\plugins\\LLSE-PCameraData\\";
-const VERSION = "1.5.0-Rel";
+const VERSION = "1.5.1-Rel";
 
 // 数据库
 const db = new KVDatabase(DATAPATH + "db");
@@ -266,11 +266,7 @@ function circular_helix(name, res) {
     for (var i = 0; i <= res.steps; i++) {
         // 计算点位
         var rad = (res.fromAng + i*stp) * Math.PI / 180;
-        var r = 180 + i * stp;
-        if (r > 180) {
-            r -= 360;
-        }
-        File.writeLine(DATAPATH + `scripts\\${name}\\${res.name}.txt`, `${res.origin.x - Math.sin(rad)*res.radius} ${res.origin.y + i*hei} ${res.origin.z + Math.cos(rad)*res.radius} rot 0 ${r}`);
+        File.writeLine(DATAPATH + `scripts\\${name}\\${res.name}.txt`, `${res.origin.x - Math.sin(rad)*res.radius} ${res.origin.y + i*hei} ${res.origin.z + Math.cos(rad)*res.radius} facing ${res.origin.x} ${res.origin.y + i*hei} ${res.origin.z}`);
     }
     File.writeLine(DATAPATH + `scripts\\${name}\\${res.name}.txt`, "end");
     File.writeLine(DATAPATH + `scripts\\${name}\\${res.name}.txt`, "end");

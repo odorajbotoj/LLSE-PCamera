@@ -1,11 +1,11 @@
 // 注册插件
-ll.registerPlugin("LLSE-PCamera", "LLSE Programmable Camera 可编程视角相机", [1, 5, 1, Version.Release], {
+ll.registerPlugin("LLSE-PCamera", "LLSE Programmable Camera 可编程视角相机", [1, 6, 0, Version.Release], {
     "Author": "odorajbotoj"
 });
 
 // 数据路径
 const DATAPATH = ".\\plugins\\LLSE-PCameraData\\";
-const VERSION = "1.5.1-Rel";
+const VERSION = "1.6.0-Rel";
 
 // 数据库
 const db = new KVDatabase(DATAPATH + "db");
@@ -17,9 +17,6 @@ const PUB_SCRIPT = conf.init("public_script", false); // 是否允许执行别�
 
 // 创建文件夹
 File.mkdir(DATAPATH + "scripts");
-
-// 其他常量
-const DIM = ["overworld", "nether", "the_end"];
 
 // 这个函数是从网上搜索到的。自己理解了之后贴出来了
 function setTimeoutWithArgs(callback, timeout, param) {
@@ -232,45 +229,63 @@ async function scriptInterpret(sArr, id, name, dim) {
 }
 
 // circle2d
-function circle2d(name, res) {
+function circle2d(res, arr) {
     // 画圆
     if (res.steps == 0) {
         return;
     }
-    File.writeLine(DATAPATH + `scripts\\${name}\\${res.name}.txt`, `head cam set minecraft:free ease ${res.timePerStep} linear pos `);
-    File.writeLine(DATAPATH + `scripts\\${name}\\${res.name}.txt`, `tail facing ${res.facing.x} ${res.facing.y} ${res.facing.z}`);
-    File.writeLine(DATAPATH + `scripts\\${name}\\${res.name}.txt`, `autodelay ${res.timePerStep}`);
+    arr.push(`head cam set minecraft:free ease ${res.timePerStep} linear pos `);
+    arr.push(`tail facing ${res.facing.x} ${res.facing.y} ${res.facing.z}`);
+    arr.push(`autodelay ${res.timePerStep}`);
     var dif = res.toAng - res.fromAng;
     var stp = dif / res.steps;
     for (var i = 0; i <= res.steps; i++) {
         // 计算点位
         var rad = (res.fromAng + i*stp) * Math.PI / 180;
-        File.writeLine(DATAPATH + `scripts\\${name}\\${res.name}.txt`, `${res.origin.x - Math.sin(rad)*res.radius} ${res.origin.y} ${res.origin.z + Math.cos(rad)*res.radius}`);
+        arr.push(`${res.origin.x - Math.sin(rad)*res.radius} ${res.origin.y} ${res.origin.z + Math.cos(rad)*res.radius}`);
     }
-    File.writeLine(DATAPATH + `scripts\\${name}\\${res.name}.txt`, "end");
-    File.writeLine(DATAPATH + `scripts\\${name}\\${res.name}.txt`, "end");
-    File.writeLine(DATAPATH + `scripts\\${name}\\${res.name}.txt`, "end");
+    arr.push("end");
+    arr.push("end");
+    arr.push("end");
 }
 
 // circular_helix
-function circular_helix(name, res) {
+function circular_helix(res, arr) {
     // 圆柱螺线
     if (res.steps == 0) {
         return;
     }
-    File.writeLine(DATAPATH + `scripts\\${name}\\${res.name}.txt`, `head cam set minecraft:free ease ${res.timePerStep} linear pos `);
-    File.writeLine(DATAPATH + `scripts\\${name}\\${res.name}.txt`, `autodelay ${res.timePerStep}`);
+    arr.push(`head cam set minecraft:free ease ${res.timePerStep} linear pos `);
+    arr.push(`autodelay ${res.timePerStep}`);
     var dif = res.toAng - res.fromAng;
     var stp = dif / res.steps;
     var hei = res.height / res.steps;
     for (var i = 0; i <= res.steps; i++) {
         // 计算点位
         var rad = (res.fromAng + i*stp) * Math.PI / 180;
-        File.writeLine(DATAPATH + `scripts\\${name}\\${res.name}.txt`, `${res.origin.x - Math.sin(rad)*res.radius} ${res.origin.y + i*hei} ${res.origin.z + Math.cos(rad)*res.radius} facing ${res.origin.x} ${res.origin.y + i*hei} ${res.origin.z}`);
+        arr.push(`${res.origin.x - Math.sin(rad)*res.radius} ${res.origin.y + i*hei} ${res.origin.z + Math.cos(rad)*res.radius} facing ${res.origin.x} ${res.origin.y + i*hei} ${res.origin.z}`);
     }
-    File.writeLine(DATAPATH + `scripts\\${name}\\${res.name}.txt`, "end");
-    File.writeLine(DATAPATH + `scripts\\${name}\\${res.name}.txt`, "end");
+    arr.push("end");
+    arr.push("end");
 }
+
+// simple_circle
+function simple_circle(res, pos, arr) {
+    // 简单圆
+    arr.push(`head cam set minecraft:free ease ${res.timePerStep} linear pos `);
+    arr.push(`tail facing ${pos.x} ${pos.y} ${pos.z}`);
+    arr.push(`autodelay ${res.timePerStep}`);
+    for (var i = 0; i <= 360; i++) {
+        // 计算点位
+        var rad = i * Math.PI / 180;
+        arr.push(`${pos.x - Math.sin(rad)*res.radius} ${pos.y} ${pos.z + Math.cos(rad)*res.radius}`);
+    }
+    arr.push("end");
+    arr.push("end");
+    arr.push("end");
+}
+
+
 mc.listen("onServerStarted", () => {
     // 注册指令pc, 别名cam
     const pc_cmd = mc.newCommand("pc", `${Format.Aqua}LLSE-PCamera 可编程视角相机${Format.Clear}`, PermType.Any, 0x80, "cam");
@@ -351,7 +366,8 @@ mc.listen("onServerStarted", () => {
     pc_cmd.mandatory("scriptAction", ParamType.Enum, "ScriptListAction", "ScriptListAction", 1);
     pc_cmd.overload(["ScriptAction", "ScriptListAction"]);
 
-    // pc preset circle2d <origin> <radius> <fromAng> <toAng> <steps> <timePerStep> <facing> <name>
+    // pc preset circle2d <origin> <radius> <fromAng> <toAng> <steps> <timePerStep> <facing> exec
+    // pc preset circle2d <origin> <radius> <fromAng> <toAng> <steps> <timePerStep> <facing> save <name>
     pc_cmd.setEnum("PresetAction", ["preset"]);
     pc_cmd.mandatory("action", ParamType.Enum, "PresetAction", "PresetAction", 1);
     pc_cmd.setEnum("PresetCircle2dAction", ["circle2d"]);
@@ -363,13 +379,27 @@ mc.listen("onServerStarted", () => {
     pc_cmd.mandatory("steps", ParamType.Int);
     pc_cmd.mandatory("timePerStep", ParamType.Float);
     pc_cmd.mandatory("facing", ParamType.Vec3);
-    pc_cmd.overload(["PresetAction", "PresetCircle2dAction", "origin", "radius", "fromAng", "toAng", "steps", "timePerStep", "facing", "name"]);
+    pc_cmd.setEnum("PresetExec", ["exec"]);
+    pc_cmd.mandatory("presetToDo", ParamType.Enum, "PresetExec", "PresetExec", 1);
+    pc_cmd.overload(["PresetAction", "PresetCircle2dAction", "origin", "radius", "fromAng", "toAng", "steps", "timePerStep", "facing", "PresetExec"]);
+    pc_cmd.setEnum("PresetSave", ["save"]);
+    pc_cmd.mandatory("presetToDo", ParamType.Enum, "PresetSave", "PresetSave", 1);
+    pc_cmd.overload(["PresetAction", "PresetCircle2dAction", "origin", "radius", "fromAng", "toAng", "steps", "timePerStep", "facing", "PresetSave", "name"]);
 
-    // pc preset circula_helix <origin> <radius> <fromAng> <toAng> <steps> <timePerStep> <height> <name>
+    // pc preset circula_helix <origin> <radius> <fromAng> <toAng> <steps> <timePerStep> <height> exec
+    // pc preset circula_helix <origin> <radius> <fromAng> <toAng> <steps> <timePerStep> <height> save <name>
     pc_cmd.setEnum("PresetCircularHelixAction", ["circular_helix"]);
     pc_cmd.mandatory("presetAction", ParamType.Enum, "PresetCircularHelixAction", "PresetCircularHelixAction", 1);
     pc_cmd.mandatory("height", ParamType.Float);
-    pc_cmd.overload(["PresetAction", "PresetCircularHelixAction", "origin", "radius", "fromAng", "toAng", "steps", "timePerStep", "height", "name"]);
+    pc_cmd.overload(["PresetAction", "PresetCircularHelixAction", "origin", "radius", "fromAng", "toAng", "steps", "timePerStep", "height", "PresetExec"]);
+    pc_cmd.overload(["PresetAction", "PresetCircularHelixAction", "origin", "radius", "fromAng", "toAng", "steps", "timePerStep", "height", "PresetSave", "name"]);
+
+    // pc preset simple_circle <radius> <timePerStep> exec
+    // pc preset simple_clrcle <radius> <timePerStep> save <name>
+    pc_cmd.setEnum("PresetSimpleCircleAction", ["simple_circle"]);
+    pc_cmd.mandatory("presetAction", ParamType.Enum, "PresetSimpleCircleAction", "PresetSimpleCircleAction", 1);
+    pc_cmd.overload(["PresetAction", "PresetSimpleCircleAction", "radius", "timePerStep", "PresetExec"]);
+    pc_cmd.overload(["PresetAction", "PresetSimpleCircleAction", "radius", "timePerStep", "PresetSave", "name"]);
 
     // 设置回调函数
     pc_cmd.setCallback((_cmd, ori, out, res) => {
@@ -644,11 +674,16 @@ mc.listen("onServerStarted", () => {
                                 if (f != null) {
                                     var fa = f.split(/\r?\n|(?<!\n)\r/);
                                     out.addMessage(`开始读取并执行Script: ${res.name}`);
-                                    // 加锁
-                                    db.set(`${name}.exec`, true);
-                                    // 丢给“解释器”就完事了
-                                    scriptInterpret(fa, ori.player.uniqueId.toString(), name, ori.player.pos.dimid);
-                                    out.success(`任务已添加`);
+                                    var loc = db.get(`${name}.exec`);
+                                    if (loc != null) {
+                                        out.error("已有脚本正在运行");
+                                    } else {
+                                        // 加锁
+                                        db.set(`${name}.exec`, true);
+                                        // 丢给“解释器”就完事了
+                                        scriptInterpret(fa, ori.player.uniqueId.toString(), name, ori.player.pos.dimid);
+                                        out.success(`任务已添加`);
+                                    }
                                 } else {
                                     out.error("读取失败");
                                 }
@@ -684,35 +719,53 @@ mc.listen("onServerStarted", () => {
 
                 case "preset":
                     // preset子命令，提供部分预设
+                    var arr = new Array();
                     switch (res.presetAction) {
                         case "circle2d":
                             // circle2d选项，提供基础的画圆操作
-                            var path = DATAPATH + `scripts\\${name}\\`;
-                            if (!File.checkIsDir(path)) {
-                                File.mkdir(path)
-                            }
-                            File.writeLine(path + `${res.name}.txt`,"# circle2d vvv")
-                            circle2d(name, res);
-                            File.writeLine(path + `${res.name}.txt`,"# circle2d ^^^")
-                            out.success("已写入脚本");
+                            arr.push("# circle2d vvv");
+                            circle2d(res, arr);
+                            arr.push("# circle2d ^^^");
                             break;
                         case "circular_helix":
                             // circularHelix选项，提供基础的圆柱螺线操作
-                            var path = DATAPATH + `scripts\\${name}\\`;
-                            if (!File.checkIsDir(path)) {
-                                File.mkdir(path)
-                            }
-                            File.writeLine(path + `${res.name}.txt`,"# circular_helix vvv")
-                            circular_helix(name, res);
-                            File.writeLine(path + `${res.name}.txt`,"# circular_helix ^^^")
-                            out.success("已写入脚本");
+                            arr.push("# circular_helix vvv")
+                            circular_helix(res, arr);
+                            arr.push("# circular_helix ^^^")
+                            break;
+                        case "simple_circle":
+                            // simple_circle选项，简化画圆操作
+                            arr.push("# simple_circle vvv")
+                            simple_circle(res, ori.player.pos, arr);
+                            arr.push("# simple_circle ^^^")
                             break;
                         default:
                             // 无匹配项则报错
                             out.error("pc: preset: 未知的操作");
                     }
+                    if (res.presetToDo == "exec") {
+                        // 直接执行
+                        out.addMessage(`开始执行Script`);
+                        var loc = db.get(`${name}.exec`);
+                        if (loc != null) {
+                            out.error("已有脚本正在运行");
+                        } else {
+                            // 加锁
+                            db.set(`${name}.exec`, true);
+                            // 丢给“解释器”就完事了
+                            scriptInterpret(arr, ori.player.uniqueId.toString(), name, ori.player.pos.dimid);
+                            out.success(`任务已添加`);
+                        }
+                    } else {
+                        // 写入脚本
+                        var path = DATAPATH + `scripts\\${name}\\`;
+                        if (!File.checkIsDir(path)) {
+                        File.mkdir(path);
+                        }
+                        File.writeLine(path + `${res.name}.txt`,arr.join("\n"));
+                        out.success("已写入脚本");
+                    }
                     break;
-
                 default:
                     // 无匹配项则报错
                     out.error("pc: 未知的操作");

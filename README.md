@@ -6,9 +6,11 @@
 
 + *提示：根据个人测试得出结论，玩家视距范围之外的相机将不会加载画面*
 
-## v1.5.1更新说明
+## v1.6.0更新说明
 
-+ 修复圆柱螺线轨迹facing方向错误的bug
++ 新增preset
+
++ preset子选项更改
 
 ## 安装
 
@@ -38,9 +40,11 @@
 
 + `pc point view <Point> [int] [target]` 查看一个点位。可以设置延时（毫秒）。若 `public_point` 为真，则可以通过指定一个target查看他人的点位
 
-+ `pc preset circle2d <origin> <radius> <fromAng> <toAng> <steps> <timePerStep> <facing> <name>` 以origin为圆心，radius为半径，从fromAng到toAng，以timePerStep为延时走steps步，面向facing坐标，生成圆弧轨迹并追加写入名为name的脚本中
++ `pc preset circle2d <origin> <radius> <fromAng> <toAng> <steps> <timePerStep> <facing> { exec | save <name> }` 以origin为圆心，radius为半径，从fromAng到toAng，以timePerStep为延时走steps步，面向facing坐标，生成圆弧轨迹并执行或追加写入名为name的脚本中
 
-+ `pc preset circula_helix <origin> <radius> <fromAng> <toAng> <steps> <timePerStep> <height> <name>` 以origin为圆心，radius为半径，从fromAng到toAng，以timePerStep为延时走steps步，面向轴心，升高（正）或降低（负）height绝对值高度，生成圆柱螺线轨迹并追加写入名为name的脚本中
++ `pc preset circula_helix <origin> <radius> <fromAng> <toAng> <steps> <timePerStep> <height> { exec | save <name> }` 以origin为圆心，radius为半径，从fromAng到toAng，以timePerStep为延时走steps步，面向轴心，升高（正）或降低（负）height绝对值高度，生成圆柱螺线轨迹并执行或追加写入名为name的脚本中
+
++ `pc preset simple_clrcle <radius> <timePerStep> { exec | save <name> }` 以自身为圆心，radius为半径，从0到360度，以timePerStep为延时走360步，面向圆心，生成圆轨迹并执行或追加写入名为name的脚本中
 
 + `pc script cat <string>` 列出一个脚本的内容
 

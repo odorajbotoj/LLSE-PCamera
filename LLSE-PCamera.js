@@ -1,11 +1,11 @@
 // 注册插件
-ll.registerPlugin("LLSE-PCamera", "LLSE Programmable Camera 可编程视角相机", [1, 6, 0, Version.Release], {
+ll.registerPlugin("LLSE-PCamera", "LLSE Programmable Camera 可编程视角相机", [1, 6, 1, Version.Release], {
     "Author": "odorajbotoj"
 });
 
 // 数据路径
 const DATAPATH = ".\\plugins\\LLSE-PCameraData\\";
-const VERSION = "1.6.0-Rel";
+const VERSION = "1.6.1-Rel";
 
 // 数据库
 const db = new KVDatabase(DATAPATH + "db");
@@ -61,7 +61,7 @@ function readStr(str) {
 
 // “解释器”主逻辑
 const sleep = (delay) => new Promise((resolve) => setTimeout(resolve, delay))
-async function scriptInterpret(sArr, id, name, dim) {
+async function scriptInterpret(sArr, name, dim) {
     // 这一部分重构过了，减少异步压力
     // 后来又重写了部分，减少了动态获取pl的次数，减小服务器压力
     var headStack = new Array();
@@ -74,7 +74,7 @@ async function scriptInterpret(sArr, id, name, dim) {
         // 决定是否继续执行
         if (!suc) {
             endStack = [];
-            var pl = mc.getPlayer(id);
+            var pl = mc.getPlayer(name);
             if (pl != null) {
                 // 决定是否产生输出
                 pl.tell(otp);
@@ -172,7 +172,7 @@ async function scriptInterpret(sArr, id, name, dim) {
                 otp = `${Format.Red}Error: 无效的输入在第 ${parseInt(i)+1} 行${Format.Clear}`;
                 continue;
             }
-            var pl = mc.getPlayer(id);
+            var pl = mc.getPlayer(name);
             if (pl != null) {
                 pl.setTitle(acti[0], p[0], p[1], p[2], p[3]);
             } else {
@@ -183,7 +183,7 @@ async function scriptInterpret(sArr, id, name, dim) {
             // 发送一个toast
             var acti = readStr(s.substring(6));
             acti[1] = readStr(acti[1])[0];
-            var pl = mc.getPlayer(id);
+            var pl = mc.getPlayer(name);
             if (pl != null) {
                 pl.sendToast(acti[0], acti[1]);
             } else {
@@ -220,7 +220,7 @@ async function scriptInterpret(sArr, id, name, dim) {
         }
     }
     if (endStack.length != 0) {
-        var pl = mc.getPlayer(id);
+        var pl = mc.getPlayer(name);
         if (pl != null) {
             pl.tell(`${Format.Yellow}Warning: 有未闭合的代码块${Format.Clear}`);
         }
@@ -325,7 +325,7 @@ mc.listen("onServerStarted", () => {
     pc_cmd.setEnum("PointViewAction", ["view"]);
     pc_cmd.mandatory("pointAction", ParamType.Enum, "PointViewAction", "PointViewAction", 1);
     pc_cmd.optional("delay", ParamType.Float);
-    pc_cmd.optional("owner", ParamType.Player);
+    pc_cmd.optional("owner", ParamType.String);
     pc_cmd.overload(["PointAction", "PointViewAction", "point", "delay", "owner"]);
 
     // pc point rm <p1|p2|p3|p4|p5|p6|p7|p8>
@@ -479,19 +479,11 @@ mc.listen("onServerStarted", () => {
                             // 判断是不是访问别人的点位
                             var owner;
                             if (res.owner != null) {
-                                if (res.owner.length == 0) {
-                                    out.error("找不到玩家对象");
-                                    return;
-                                }
-                                if (res.owner.length > 1) {
-                                    out.error("不可选中多个玩家");
-                                    return;
-                                }
-                                owner = res.owner[0].name;
-                                if (name != owner && !PUB_POINT) {
+                                if (name != res.owner && !PUB_POINT) {
                                     out.error("未开启此功能");
                                     return;
                                 }
+                                owner = res.owner;
                             } else {
                                 owner = name;
                             }
@@ -504,12 +496,12 @@ mc.listen("onServerStarted", () => {
                                 // 如果有延时，就设置延时执行。但是直接setTimeout是不行的，会拿不到对象
                                 // 所以我们先保存id，之后再动态获取
                                 if (res.delay != 0) {
-                                    setTimeoutWithArgs((id, poi, own) => {
-                                        var pl = mc.getPlayer(id.toString());
+                                    setTimeoutWithArgs((name, poi, own) => {
+                                        var pl = mc.getPlayer(name);
                                         if (pl != null) {
                                             pl.runcmd(`pc point view ${poi} 0 ${own}`);
                                         }
-                                    }, res.delay*1000, ori.player.uniqueId, res.point, owner);
+                                    }, res.delay*1000, name, res.point, owner);
                                     return;
                                 }
                             }
@@ -541,25 +533,25 @@ mc.listen("onServerStarted", () => {
 
                         case "ls":
                             // ls选项，列出玩家所有点位
-                            var sa = new Array();
+                            var sarr = new Array();
                             for (var i = 1; i < 9; i++) {
                                 var s = db.get(`${name}.p${i}`);
                                 if (s == null) {
-                                    sa.push(`${Format.MinecoinGold}点位p${i}: Undefined.${Format.Clear}`);
+                                    sarr.push(`${Format.MinecoinGold}点位p${i}: Undefined.${Format.Clear}`);
                                     continue;
                                 }
                                 var sa = s.split(" ");
                                 var c = db.get(`${name}.p${i}c`);
-                                sa.push(`${Format.Yellow}点位p${i}:${Format.Clear}`);
-                                sa.push(`${Format.Aqua}x:${Format.Clear} ${sa[0]}`);
-                                sa.push(`${Format.Aqua}y:${Format.Clear} ${sa[1]}`);
-                                sa.push(`${Format.Aqua}z:${Format.Clear} ${sa[2]}`);
-                                sa.push(`${Format.Blue}维度id:${Format.Clear} ${sa[3]}`);
-                                sa.push(`${Format.Green}俯仰角:${Format.Clear} ${sa[4]}`);
-                                sa.push(`${Format.Green}旋转角:${Format.Clear} ${sa[5]}`);
-                                sa.push(`${Format.Gray}注释:${Format.Clear} ${c}`);
+                                sarr.push(`${Format.Yellow}点位p${i}:${Format.Clear}`);
+                                sarr.push(`${Format.Aqua}x:${Format.Clear} ${sa[0]}`);
+                                sarr.push(`${Format.Aqua}y:${Format.Clear} ${sa[1]}`);
+                                sarr.push(`${Format.Aqua}z:${Format.Clear} ${sa[2]}`);
+                                sarr.push(`${Format.Blue}维度id:${Format.Clear} ${sa[3]}`);
+                                sarr.push(`${Format.Green}俯仰角:${Format.Clear} ${sa[4]}`);
+                                sarr.push(`${Format.Green}旋转角:${Format.Clear} ${sa[5]}`);
+                                sarr.push(`${Format.Gray}注释:${Format.Clear} ${c}`);
                             }
-                            var fm = mc.newSimpleForm().setTitle(`${Format.Gold}玩家 ${name} 的点位信息:${Format.Clear}`).setContent(sa.join("\n"));
+                            var fm = mc.newSimpleForm().setTitle(`${Format.Gold}玩家 ${name} 的点位信息:${Format.Clear}`).setContent(sarr.join("\n"));
                             ori.player.sendForm(fm, (_pl, _id) => {return});
                             break;
 
@@ -633,19 +625,11 @@ mc.listen("onServerStarted", () => {
                             // 判断是不是访问别人的脚本
                             var owner;
                             if (res.owner != null) {
-                                if (res.owner.length == 0) {
-                                    out.error("找不到玩家对象");
-                                    return;
-                                }
-                                if (res.owner.length > 1) {
-                                    out.error("不可选中多个玩家");
-                                    return;
-                                }
-                                owner = res.owner[0].name;
-                                if (name != owner && !PUB_SCRIPT) {
+                                if (name != res.owner && !PUB_SCRIPT) {
                                     out.error("未开启此功能");
                                     return;
                                 }
+                                owner = res.owner;
                             } else {
                                 owner = name;
                             }
@@ -658,12 +642,12 @@ mc.listen("onServerStarted", () => {
                                 // 如果有延时，就设置延时执行。但是直接setTimeout是不行的，会拿不到对象
                                 // 所以我们先保存id，之后再动态获取
                                 if (res.delay != 0) {
-                                    setTimeoutWithArgs((id, scr, own) => {
-                                        var pl = mc.getPlayer(id.toString());
+                                    setTimeoutWithArgs((name, scr, own) => {
+                                        var pl = mc.getPlayer(name);
                                         if (pl != null) {
                                             pl.runcmd(`pc script exec ${scr} 0 ${own}`);
                                         }
-                                    }, res.delay*1000, ori.player.uniqueId, res.name, owner);
+                                    }, res.delay*1000, name, res.name, owner);
                                     return;
                                 }
                             }
@@ -681,7 +665,7 @@ mc.listen("onServerStarted", () => {
                                         // 加锁
                                         db.set(`${name}.exec`, true);
                                         // 丢给“解释器”就完事了
-                                        scriptInterpret(fa, ori.player.uniqueId.toString(), name, ori.player.pos.dimid);
+                                        scriptInterpret(fa, name, ori.player.pos.dimid);
                                         out.success(`任务已添加`);
                                     }
                                 } else {
@@ -753,7 +737,7 @@ mc.listen("onServerStarted", () => {
                             // 加锁
                             db.set(`${name}.exec`, true);
                             // 丢给“解释器”就完事了
-                            scriptInterpret(arr, ori.player.uniqueId.toString(), name, ori.player.pos.dimid);
+                            scriptInterpret(arr, name, ori.player.pos.dimid);
                             out.success(`任务已添加`);
                         }
                     } else {
@@ -821,7 +805,7 @@ mc.listen("onChat", (pl, msg) => {
                 pl.sendToast("失败", "缓冲区为空");
                 return false;
             }
-            if (na != "") {
+            if (na != null && na != "") {
                 efn = na;
             }
             File.writeTo(DATAPATH + `scripts\\${name}\\${efn}.txt`,arr.slice(1).join("\n").trim());

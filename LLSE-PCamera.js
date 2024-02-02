@@ -1,11 +1,11 @@
 // 注册插件
-ll.registerPlugin("LLSE-PCamera", "LLSE Programmable Camera 可编程视角相机", [1, 6, 1, Version.Release], {
+ll.registerPlugin("LLSE-PCamera", "LLSE Programmable Camera 可编程视角相机", [1, 7, 0, Version.Release], {
     "Author": "odorajbotoj"
 });
 
 // 数据路径
 const DATAPATH = ".\\plugins\\LLSE-PCameraData\\";
-const VERSION = "1.6.1-Rel";
+const VERSION = "1.7.0-Rel";
 
 // 数据库
 const db = new KVDatabase(DATAPATH + "db");
@@ -61,170 +61,172 @@ function readStr(str) {
 
 // “解释器”主逻辑
 const sleep = (delay) => new Promise((resolve) => setTimeout(resolve, delay))
-async function scriptInterpret(sArr, name, dim) {
-    // 这一部分重构过了，减少异步压力
-    // 后来又重写了部分，减少了动态获取pl的次数，减小服务器压力
-    var headStack = new Array();
-    var tailStack = new Array();
-    var delayStack = new Array();
-    var endStack = new Array();
-    var suc = true;
-    var otp = "";
-    for (var i in sArr) {
-        // 决定是否继续执行
-        if (!suc) {
-            endStack = [];
-            var pl = mc.getPlayer(name);
-            if (pl != null) {
-                // 决定是否产生输出
-                pl.tell(otp);
+async function scriptInterpret(sArr, name, dim, rep) {
+    do {
+        // 这一部分重构过了，减少异步压力
+        // 后来又重写了部分，减少了动态获取pl的次数，减小服务器压力
+        var headStack = new Array();
+        var tailStack = new Array();
+        var delayStack = new Array();
+        var endStack = new Array();
+        var suc = true;
+        var otp = "";
+        for (var i in sArr) {
+            // 决定是否继续执行
+            if (!suc) {
+                endStack = [];
+                var pl = mc.getPlayer(name);
+                if (pl != null) {
+                    // 决定是否产生输出
+                    pl.tell(otp);
+                }
+                break;
             }
-            break;
-        }
-        // 检查lock状态
-        var lock = db.get(`${name}.exec`);
-        if (lock == null) {
-            endStack = [];
-            break;
-        }
-        // 跳过空行
-        if (sArr[i].startsWith("#") || sArr[i] == "") {
-            continue;
-        }
-        // 解析流程语句
-        if (sArr[i].startsWith("head ")) {
-            // 支持head，以简化输入
-            headStack.push(sArr[i].substring(5));
-            endStack.push("head");
-            continue;
-        } else if (sArr[i].startsWith("tail ")) {
-            // 支持tail，以简化输入
-            tailStack.push(sArr[i].substring(5));
-            endStack.push("tail");
-            continue;
-        } else if (sArr[i].startsWith("setdim ")) {
-            // 支持setdim检查维度
-            var d = parseInt(sArr[i].substring(7));
-            if (d != 0 && d != 1 && d != 2) {
-                suc = false;
-                otp = `${Format.Red}Error: 无效的输入在第 ${parseInt(i)+1} 行${Format.Clear}`;
+            // 检查lock状态
+            var lock = db.get(`${name}.exec`);
+            if (lock == null) {
+                endStack = [];
+                break;
+            }
+            // 跳过空行
+            if (sArr[i].startsWith("#") || sArr[i] == "") {
                 continue;
             }
-            if (d != dim) {
-                suc = false;
-                otp = `${Format.Red}Error: 维度不同${Format.Clear}`;
+            // 解析流程语句
+            if (sArr[i].startsWith("head ")) {
+                // 支持head，以简化输入
+                headStack.push(sArr[i].substring(5));
+                endStack.push("head");
+                continue;
+            } else if (sArr[i].startsWith("tail ")) {
+                // 支持tail，以简化输入
+                tailStack.push(sArr[i].substring(5));
+                endStack.push("tail");
+                continue;
+            } else if (sArr[i].startsWith("setdim ")) {
+                // 支持setdim检查维度
+                var d = parseInt(sArr[i].substring(7));
+                if (d != 0 && d != 1 && d != 2) {
+                    suc = false;
+                    otp = `${Format.Red}Error: 无效的输入在第 ${parseInt(i)+1} 行${Format.Clear}`;
+                    continue;
+                }
+                if (d != dim) {
+                    suc = false;
+                    otp = `${Format.Red}Error: 维度不同${Format.Clear}`;
+                    continue;
+                }
+                continue;
+            } else if (sArr[i].startsWith("autodelay ")) {
+                // 支持autodelay，以简化输入
+                var des = parseFloat(sArr[i].substring(10));
+                if (isNaN(des)) {
+                    suc = false;
+                    otp = `${Format.Red}Error: 无效的输入在第 ${parseInt(i)+1} 行${Format.Clear}`;
+                    continue;
+                }
+                delayStack.push(des);
+                endStack.push("delay");
+                continue;
+            } else if (sArr[i] == "end") {
+                // 闭合一个代码块
+                switch (endStack[endStack.length-1]) {
+                    case "head":
+                        headStack.pop();
+                        break;
+                    case "tail":
+                        tailStack.pop();
+                        break;
+                    case "delay":
+                        delayStack.pop();
+                        break;
+                }
+                endStack.pop();
+                continue;
+            } else if (sArr[i].startsWith("delay ")) {
+                // 设置延时，单位毫秒
+                var des = parseFloat(sArr[i].substring(6));
+                if (isNaN(des)) {
+                    suc = false;
+                    otp = `${Format.Red}Error: 无效的输入在第 ${parseInt(i)+1} 行${Format.Clear}`;
+                    continue;
+                }
+                await sleep(des * 1000);
                 continue;
             }
-            continue;
-        } else if (sArr[i].startsWith("autodelay ")) {
-            // 支持autodelay，以简化输入
-            var des = parseFloat(sArr[i].substring(10));
-            if (isNaN(des)) {
-                suc = false;
-                otp = `${Format.Red}Error: 无效的输入在第 ${parseInt(i)+1} 行${Format.Clear}`;
-                continue;
-            }
-            delayStack.push(des);
-            endStack.push("delay");
-            continue;
-        } else if (sArr[i] == "end") {
-            // 闭合一个代码块
-            switch (endStack[endStack.length-1]) {
-                case "head":
-                    headStack.pop();
-                    break;
-                case "tail":
-                    tailStack.pop();
-                    break;
-                case "delay":
-                    delayStack.pop();
-                    break;
-            }
-            endStack.pop();
-            continue;
-        } else if (sArr[i].startsWith("delay ")) {
-            // 设置延时，单位毫秒
-            var des = parseFloat(sArr[i].substring(6));
-            if (isNaN(des)) {
-                suc = false;
-                otp = `${Format.Red}Error: 无效的输入在第 ${parseInt(i)+1} 行${Format.Clear}`;
-                continue;
-            }
-            await sleep(des * 1000);
-            continue;
-        }
-        // 处理功能语句
-        var s = headStack.join(" ") + " " + sArr[i] + " " + tailStack.join(" ");
-        s = s.trim();
-        // 解析功能语句
-        if (s.startsWith("title ")) {
-            // 发送一个标题
-            var acti = readStr(s.substring(6));
-            var para = acti[1].trim().split(" ");
-            if (para.length != 4) {
-                suc = false;
-                otp = `${Format.Red}Error: 错误的参数数目在第 ${parseInt(i)+1} 行${Format.Clear}`;
-                continue;
-            }
-            var p = [parseInt(para[0]), parseInt(para[1]), parseInt(para[2]), parseInt(para[3])];
-            if (isNaN(p[0]) || isNaN(p[1]) || isNaN(p[2]) || isNaN(p[3])) {
-                suc = false;
-                otp = `${Format.Red}Error: 无效的输入在第 ${parseInt(i)+1} 行${Format.Clear}`;
-                continue;
-            }
-            var pl = mc.getPlayer(name);
-            if (pl != null) {
-                pl.setTitle(acti[0], p[0], p[1], p[2], p[3]);
+            // 处理功能语句
+            var s = headStack.join(" ") + " " + sArr[i] + " " + tailStack.join(" ");
+            s = s.trim();
+            // 解析功能语句
+            if (s.startsWith("title ")) {
+                // 发送一个标题
+                var acti = readStr(s.substring(6));
+                var para = acti[1].trim().split(" ");
+                if (para.length != 4) {
+                    suc = false;
+                    otp = `${Format.Red}Error: 错误的参数数目在第 ${parseInt(i)+1} 行${Format.Clear}`;
+                    continue;
+                }
+                var p = [parseInt(para[0]), parseInt(para[1]), parseInt(para[2]), parseInt(para[3])];
+                if (isNaN(p[0]) || isNaN(p[1]) || isNaN(p[2]) || isNaN(p[3])) {
+                    suc = false;
+                    otp = `${Format.Red}Error: 无效的输入在第 ${parseInt(i)+1} 行${Format.Clear}`;
+                    continue;
+                }
+                var pl = mc.getPlayer(name);
+                if (pl != null) {
+                    pl.setTitle(acti[0], p[0], p[1], p[2], p[3]);
+                } else {
+                    suc = false;
+                    continue;
+                }
+            } else if (s.startsWith("toast ")) {
+                // 发送一个toast
+                var acti = readStr(s.substring(6));
+                acti[1] = readStr(acti[1])[0];
+                var pl = mc.getPlayer(name);
+                if (pl != null) {
+                    pl.sendToast(acti[0], acti[1]);
+                } else {
+                    suc = false;
+                    continue;
+                }
+            } else if (s.startsWith("shake ")) {
+                // 执行camerashake操作
+                var acti = s.substring(6);
+                var rst = mc.runcmdEx(`camerashake add ${name} ${acti}`);
+                suc = rst.success;
+                otp = rst.output;
+                if (!suc) {
+                    continue;
+                }
+            } else if (s.startsWith("cam ")) {
+                // 执行camera操作
+                var acti = s.substring(4);
+                var rst = mc.runcmdEx(`camera ${name} ${acti}`);
+                suc = rst.success;
+                otp = rst.output;
+                otp = rst.output;
+                if (!suc) {
+                    continue;
+                }
             } else {
                 suc = false;
+                otp = `${Format.Red}Error: 未知的操作在第 ${parseInt(i)+1} 行${Format.Clear}`;
                 continue;
             }
-        } else if (s.startsWith("toast ")) {
-            // 发送一个toast
-            var acti = readStr(s.substring(6));
-            acti[1] = readStr(acti[1])[0];
+            // autodelay
+            if (delayStack.length != 0) {
+                await sleep(delayStack[delayStack.length-1] * 1000);
+            }
+        }
+        if (endStack.length != 0) {
             var pl = mc.getPlayer(name);
             if (pl != null) {
-                pl.sendToast(acti[0], acti[1]);
-            } else {
-                suc = false;
-                continue;
+                pl.tell(`${Format.Yellow}Warning: 有未闭合的代码块${Format.Clear}`);
             }
-        } else if (s.startsWith("shake ")) {
-            // 执行camerashake操作
-            var acti = s.substring(6);
-            var rst = mc.runcmdEx(`camerashake add ${name} ${acti}`);
-            suc = rst.success;
-            otp = rst.output;
-            if (!suc) {
-                continue;
-            }
-        } else if (s.startsWith("cam ")) {
-            // 执行camera操作
-            var acti = s.substring(4);
-            var rst = mc.runcmdEx(`camera ${name} ${acti}`);
-            suc = rst.success;
-            otp = rst.output;
-            otp = rst.output;
-            if (!suc) {
-                continue;
-            }
-        } else {
-            suc = false;
-            otp = `${Format.Red}Error: 未知的操作在第 ${parseInt(i)+1} 行${Format.Clear}`;
-            continue;
         }
-        // autodelay
-        if (delayStack.length != 0) {
-            await sleep(delayStack[delayStack.length-1] * 1000);
-        }
-    }
-    if (endStack.length != 0) {
-        var pl = mc.getPlayer(name);
-        if (pl != null) {
-            pl.tell(`${Format.Yellow}Warning: 有未闭合的代码块${Format.Clear}`);
-        }
-    }
+    } while (rep);
     db.delete(`${name}.exec`);
 }
 
@@ -356,10 +358,11 @@ mc.listen("onServerStarted", () => {
     pc_cmd.mandatory("scriptAction", ParamType.Enum, "ScriptCatAction", "ScriptCatAction", 1);
     pc_cmd.overload(["ScriptAction", "ScriptCatAction", "name"]);
 
-    // pc script exec <name> [delay] [owner]
+    // pc script exec <name> [repeat] [delay] [owner]
     pc_cmd.setEnum("ScriptExecAction", ["exec"]);
     pc_cmd.mandatory("scriptAction", ParamType.Enum, "ScriptExecAction", "ScriptExecAction", 1);
-    pc_cmd.overload(["ScriptAction", "ScriptExecAction", "name", "delay", "owner"]);
+    pc_cmd.optional("repeat", ParamType.Bool);
+    pc_cmd.overload(["ScriptAction", "ScriptExecAction", "name", "repeat", "delay", "owner"]);
 
     // pc script ls
     pc_cmd.setEnum("ScriptListAction", ["ls"]);
@@ -665,7 +668,7 @@ mc.listen("onServerStarted", () => {
                                         // 加锁
                                         db.set(`${name}.exec`, true);
                                         // 丢给“解释器”就完事了
-                                        scriptInterpret(fa, name, ori.player.pos.dimid);
+                                        scriptInterpret(fa, name, ori.player.pos.dimid, res.repeat);
                                         out.success(`任务已添加`);
                                     }
                                 } else {
@@ -737,7 +740,7 @@ mc.listen("onServerStarted", () => {
                             // 加锁
                             db.set(`${name}.exec`, true);
                             // 丢给“解释器”就完事了
-                            scriptInterpret(arr, name, ori.player.pos.dimid);
+                            scriptInterpret(arr, name, ori.player.pos.dimid, false);
                             out.success(`任务已添加`);
                         }
                     } else {

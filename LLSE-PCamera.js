@@ -1,11 +1,11 @@
 // 注册插件
-ll.registerPlugin("LLSE-PCamera", "LLSE Programmable Camera 可编程视角相机", [1, 7, 0, Version.Release], {
+ll.registerPlugin("LLSE-PCamera", "LLSE Programmable Camera 可编程视角相机", [1, 7, 1, Version.Release], {
     "Author": "odorajbotoj"
 });
 
 // 数据路径
 const DATAPATH = ".\\plugins\\LLSE-PCameraData\\";
-const VERSION = "1.7.0-Rel";
+const VERSION = "1.7.1-Rel";
 
 // 数据库
 const db = new KVDatabase(DATAPATH + "db");
@@ -825,7 +825,7 @@ mc.listen("onChat", (pl, msg) => {
                 pl.sendToast("失败", "缓冲区为空");
                 return false;
             }
-            if (arr.length < ln) {
+            if (arr <= 0 || arr.length < ln) {
                 pl.sendToast("失败", "数值超出范围");
                 return false;
             }
@@ -845,7 +845,7 @@ mc.listen("onChat", (pl, msg) => {
                 pl.sendToast("失败", "缓冲区为空");
                 return false;
             }
-            if (arr.length < ln) {
+            if (arr <= 0 || arr.length < ln) {
                 pl.sendToast("失败", "数值超出范围");
                 return false;
             }

@@ -1,11 +1,11 @@
 // 注册插件
-ll.registerPlugin("LLSE-PCamera", "LLSE Programmable Camera 可编程视角相机", [1, 7, 1, Version.Release], {
+ll.registerPlugin("LLSE-PCamera", "LLSE Programmable Camera 可编程视角相机", [1, 7, 2, Version.Release], {
     "Author": "odorajbotoj"
 });
 
 // 数据路径
 const DATAPATH = ".\\plugins\\LLSE-PCameraData\\";
-const VERSION = "1.7.1-Rel";
+const VERSION = "1.7.2-Rel";
 
 // 数据库
 const db = new KVDatabase(DATAPATH + "db");
@@ -62,15 +62,23 @@ function readStr(str) {
 // “解释器”主逻辑
 const sleep = (delay) => new Promise((resolve) => setTimeout(resolve, delay))
 async function scriptInterpret(sArr, name, dim, rep) {
+    // 这一部分重构过了，减少异步压力
+    // 后来又重写了部分，减少了动态获取pl的次数，减小服务器压力
+    var headStack = new Array();
+    var tailStack = new Array();
+    var delayStack = new Array();
+    var endStack = new Array();
+    var suc = true;
+    var otp = "";
     do {
-        // 这一部分重构过了，减少异步压力
-        // 后来又重写了部分，减少了动态获取pl的次数，减小服务器压力
-        var headStack = new Array();
-        var tailStack = new Array();
-        var delayStack = new Array();
-        var endStack = new Array();
-        var suc = true;
-        var otp = "";
+        // 1.7修改：增加循环执行功能
+        // 1.7.2修改：尝试修复未知的崩服bug
+        headStack = [];
+        tailStack = [];
+        delayStack = [];
+        endStack = [];
+        suc = true;
+        otp = "";
         for (var i in sArr) {
             // 决定是否继续执行
             if (!suc) {
@@ -83,9 +91,15 @@ async function scriptInterpret(sArr, name, dim, rep) {
                 break;
             }
             // 检查lock状态
+            // 1.7.2：就是这里！
+            // lock释放，会导致一直break
+            // 然后服务器就在for开头和break之间一直循环
+            // 然后就进入假死状态
+            // 解决方法是及时取消外层do-while
             var lock = db.get(`${name}.exec`);
             if (lock == null) {
                 endStack = [];
+                rep = false;
                 break;
             }
             // 跳过空行

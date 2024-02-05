@@ -1,11 +1,11 @@
 // 注册插件
-ll.registerPlugin("LLSE-PCamera", "LLSE Programmable Camera 可编程视角相机", [1, 7, 2, Version.Release], {
+ll.registerPlugin("LLSE-PCamera", "LLSE Programmable Camera 可编程视角相机", [1, 8, 0, Version.Release], {
     "Author": "odorajbotoj"
 });
 
 // 数据路径
 const DATAPATH = ".\\plugins\\LLSE-PCameraData\\";
-const VERSION = "1.7.2-Rel";
+const VERSION = "1.8.0-Rel";
 
 // 数据库
 const db = new KVDatabase(DATAPATH + "db");
@@ -68,6 +68,7 @@ async function scriptInterpret(sArr, name, dim, rep) {
     var tailStack = new Array();
     var delayStack = new Array();
     var endStack = new Array();
+    var originStack = new Array();
     var suc = true;
     var otp = "";
     do {
@@ -77,6 +78,7 @@ async function scriptInterpret(sArr, name, dim, rep) {
         tailStack = [];
         delayStack = [];
         endStack = [];
+        originStack = [];
         suc = true;
         otp = "";
         for (var i in sArr) {
@@ -88,6 +90,8 @@ async function scriptInterpret(sArr, name, dim, rep) {
                     // 决定是否产生输出
                     pl.tell(otp);
                 }
+                // 1.7.3：还是这里！（笑哭
+                rep = false;
                 break;
             }
             // 检查lock状态
@@ -142,6 +146,10 @@ async function scriptInterpret(sArr, name, dim, rep) {
                 delayStack.push(des);
                 endStack.push("delay");
                 continue;
+            } else if (sArr[i].startsWith("origin ")) {
+                originStack.push(sArr[i].substring(7));
+                endStack.push("origin");
+                continue;
             } else if (sArr[i] == "end") {
                 // 闭合一个代码块
                 switch (endStack[endStack.length-1]) {
@@ -154,6 +162,8 @@ async function scriptInterpret(sArr, name, dim, rep) {
                     case "delay":
                         delayStack.pop();
                         break;
+                    case "origin":
+                        originStack.pop();
                 }
                 endStack.pop();
                 continue;
@@ -216,10 +226,13 @@ async function scriptInterpret(sArr, name, dim, rep) {
                 }
             } else if (s.startsWith("cam ")) {
                 // 执行camera操作
+                var cs = "";
+                if (originStack.length != 0) {
+                    cs = `execute at ${originStack[originStack.length-1]} run `
+                }
                 var acti = s.substring(4);
-                var rst = mc.runcmdEx(`camera ${name} ${acti}`);
+                var rst = mc.runcmdEx(cs + `camera ${name} ${acti}`);
                 suc = rst.success;
-                otp = rst.output;
                 otp = rst.output;
                 if (!suc) {
                     continue;

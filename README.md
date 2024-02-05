@@ -6,9 +6,9 @@
 
 + *提示：根据个人测试得出结论，玩家视距范围之外的相机将不会加载画面*
 
-## v1.7.2更新说明
+## v1.8.0更新说明
 
-+ 修复崩服BUG
++ 脚本新增 `origin` 选项，变相支持玩家跟踪
 
 ## 安装
 
@@ -76,17 +76,19 @@
 
 + `toast "text1" "text2"` text1和text2分别是toast上下两行内容（支持反斜杠转义双引号）。
 
-+ `shake` 同上述 `pc shake`
++ `shake <string>` 同上述 `pc shake`
 
-+ `cam` 同上述 `pc eval`
++ `cam <string>` 同上述 `pc eval`
 
-+ `head` 在遇到下一个 `end` 或结尾前使用相同前缀
++ `head <string>` 在遇到下一个 `end` 或结尾前使用相同前缀
 
-+ `tail` 在遇到下一个 `end` 或结尾前使用相同后缀
++ `tail <string>` 在遇到下一个 `end` 或结尾前使用相同后缀
 
-+ `autodelay` 在遇到下一个 `end` 或结尾前每一条指令后都执行delay
++ `autodelay <int>` 在遇到下一个 `end` 或结尾前每一条指令后都执行delay
 
-+ `setdim int` 设置脚本执行的维度，不在同一维度的玩家将无法执行其之后的内容。建议设置在开头。可选值为0（主世界），1（地狱），2（末地）
++ `origin <name>` 在遇到下一个 `end` 或结尾之前修饰 `cam` 选项，即变成 `execute at <target> run cam <name> <string>` 。这意味着 `cam` 里面的 `pos` 和 `facing` 将支持绝对坐标/相对坐标/局部坐标/玩家名称。
+
++ `setdim <int>` 设置脚本执行的维度，不在同一维度的玩家将无法执行其之后的内容。建议设置在开头。可选值为0（主世界），1（地狱），2（末地）
 
 ## 编辑脚本
 

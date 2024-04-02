@@ -218,7 +218,7 @@ async function scriptInterpret(sArr, name, dim, rep) {
             } else if (s.startsWith("shake ")) {
                 // 执行camerashake操作
                 var acti = s.substring(6);
-                var rst = mc.runcmdEx(`camerashake add ${name} ${acti}`);
+                var rst = mc.runcmdEx(`camerashake add "${name}" ${acti}`);
                 suc = rst.success;
                 otp = rst.output;
                 if (!suc) {
@@ -231,7 +231,7 @@ async function scriptInterpret(sArr, name, dim, rep) {
                     cs = `execute at ${originStack[originStack.length-1]} run `
                 }
                 var acti = s.substring(4);
-                var rst = mc.runcmdEx(cs + `camera ${name} ${acti}`);
+                var rst = mc.runcmdEx(cs + `camera "${name}" ${acti}`);
                 suc = rst.success;
                 otp = rst.output;
                 if (!suc) {
@@ -443,15 +443,15 @@ mc.listen("onServerStarted", () => {
                 case "clear":
                     // clear选项, 清除相机效果，停止执行脚本
                     db.delete(`${name}.exec`);
-                    mc.runcmdEx(`camera ${name} clear`);
-                    mc.runcmdEx(`camerashake stop ${name}`);
+                    mc.runcmdEx(`camera "${name}" clear`);
+                    mc.runcmdEx(`camerashake stop "${name}"`);
                     out.success("已清除所有相机效果");
                     break;
 
                 case "eval":
                     // eval选项, 相当于下放camera指令
                     var rst;
-                    rst = mc.runcmdEx(`camera ${name} ${res.cmd}`);
+                    rst = mc.runcmdEx(`camera "${name}" ${res.cmd}`);
                     if (rst.success) {
                         out.success(rst.output);
                     } else {
@@ -462,7 +462,7 @@ mc.listen("onServerStarted", () => {
 
                 case "shake":
                     // shake选项, 相当于下放camerashake add指令
-                    var rst = mc.runcmdEx(`camerashake add ${name} ${res.cmd}`);
+                    var rst = mc.runcmdEx(`camerashake add "${name}" ${res.cmd}`);
                     if (rst.success) {
                         out.success(rst.output);
                     } else {
@@ -529,7 +529,7 @@ mc.listen("onServerStarted", () => {
                                     setTimeoutWithArgs((name, poi, own) => {
                                         var pl = mc.getPlayer(name);
                                         if (pl != null) {
-                                            pl.runcmd(`pc point view ${poi} 0 ${own}`);
+                                            pl.runcmd(`pc point view ${poi} 0 "${own}"`);
                                         }
                                     }, res.delay*1000, name, res.point, owner);
                                     return;
@@ -545,7 +545,7 @@ mc.listen("onServerStarted", () => {
                                 out.error("维度不同");
                                 return;
                             }
-                            var rst = mc.runcmdEx(`camera ${name} set minecraft:free pos ${p[0]} ${p[1]} ${p[2]} rot ${p[4]} ${p[5]}`);
+                            var rst = mc.runcmdEx(`camera "${name}" set minecraft:free pos ${p[0]} ${p[1]} ${p[2]} rot ${p[4]} ${p[5]}`);
                             if (rst.success) {
                                 out.success(rst.output);
                             } else {
@@ -675,7 +675,7 @@ mc.listen("onServerStarted", () => {
                                     setTimeoutWithArgs((name, scr, own) => {
                                         var pl = mc.getPlayer(name);
                                         if (pl != null) {
-                                            pl.runcmd(`pc script exec ${scr} 0 ${own}`);
+                                            pl.runcmd(`pc script exec ${scr} 0 "${own}"`);
                                         }
                                     }, res.delay*1000, name, res.name, owner);
                                     return;

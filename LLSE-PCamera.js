@@ -1,11 +1,13 @@
+/// <reference path="/home/odorajbotoj/workspace/mcbe/LiteLoaderSE-Aids/dts/helperlib/src/index.d.ts" />
+
 // 注册插件
-ll.registerPlugin("LLSE-PCamera", "LLSE Programmable Camera 可编程视角相机", [1, 8, 0, Version.Release], {
+ll.registerPlugin("LLSE-PCamera", "LLSE Programmable Camera 可编程视角相机", [1, 9, 0, Version.Release], {
     "Author": "odorajbotoj"
 });
 
 // 数据路径
 const DATAPATH = ".\\plugins\\LLSE-PCameraData\\";
-const VERSION = "1.8.0-Rel";
+const VERSION = "1.9.0-Rel";
 
 // 数据库
 const db = new KVDatabase(DATAPATH + "db");
@@ -49,7 +51,7 @@ function readStr(str) {
                 continue;
             } else if (c == "\"") {
                 flag1 = false;
-                re[1] = str.substring(i+1);
+                re[1] = str.substring(i + 1);
                 break;
             } else {
                 re[0] += c;
@@ -126,7 +128,7 @@ async function scriptInterpret(sArr, name, dim, rep) {
                 var d = parseInt(sArr[i].substring(7));
                 if (d != 0 && d != 1 && d != 2) {
                     suc = false;
-                    otp = `${Format.Red}Error: 无效的输入在第 ${parseInt(i)+1} 行${Format.Clear}`;
+                    otp = `${Format.Red}Error: 无效的输入在第 ${parseInt(i) + 1} 行${Format.Clear}`;
                     continue;
                 }
                 if (d != dim) {
@@ -140,7 +142,7 @@ async function scriptInterpret(sArr, name, dim, rep) {
                 var des = parseFloat(sArr[i].substring(10));
                 if (isNaN(des)) {
                     suc = false;
-                    otp = `${Format.Red}Error: 无效的输入在第 ${parseInt(i)+1} 行${Format.Clear}`;
+                    otp = `${Format.Red}Error: 无效的输入在第 ${parseInt(i) + 1} 行${Format.Clear}`;
                     continue;
                 }
                 delayStack.push(des);
@@ -152,7 +154,7 @@ async function scriptInterpret(sArr, name, dim, rep) {
                 continue;
             } else if (sArr[i] == "end") {
                 // 闭合一个代码块
-                switch (endStack[endStack.length-1]) {
+                switch (endStack[endStack.length - 1]) {
                     case "head":
                         headStack.pop();
                         break;
@@ -172,7 +174,7 @@ async function scriptInterpret(sArr, name, dim, rep) {
                 var des = parseFloat(sArr[i].substring(6));
                 if (isNaN(des)) {
                     suc = false;
-                    otp = `${Format.Red}Error: 无效的输入在第 ${parseInt(i)+1} 行${Format.Clear}`;
+                    otp = `${Format.Red}Error: 无效的输入在第 ${parseInt(i) + 1} 行${Format.Clear}`;
                     continue;
                 }
                 await sleep(des * 1000);
@@ -188,13 +190,13 @@ async function scriptInterpret(sArr, name, dim, rep) {
                 var para = acti[1].trim().split(" ");
                 if (para.length != 4) {
                     suc = false;
-                    otp = `${Format.Red}Error: 错误的参数数目在第 ${parseInt(i)+1} 行${Format.Clear}`;
+                    otp = `${Format.Red}Error: 错误的参数数目在第 ${parseInt(i) + 1} 行${Format.Clear}`;
                     continue;
                 }
                 var p = [parseInt(para[0]), parseInt(para[1]), parseInt(para[2]), parseInt(para[3])];
                 if (isNaN(p[0]) || isNaN(p[1]) || isNaN(p[2]) || isNaN(p[3])) {
                     suc = false;
-                    otp = `${Format.Red}Error: 无效的输入在第 ${parseInt(i)+1} 行${Format.Clear}`;
+                    otp = `${Format.Red}Error: 无效的输入在第 ${parseInt(i) + 1} 行${Format.Clear}`;
                     continue;
                 }
                 var pl = mc.getPlayer(name);
@@ -228,7 +230,7 @@ async function scriptInterpret(sArr, name, dim, rep) {
                 // 执行camera操作
                 var cs = "";
                 if (originStack.length != 0) {
-                    cs = `execute at ${originStack[originStack.length-1]} run `
+                    cs = `execute at ${originStack[originStack.length - 1]} run `
                 }
                 var acti = s.substring(4);
                 var rst = mc.runcmdEx(cs + `camera "${name}" ${acti}`);
@@ -239,12 +241,12 @@ async function scriptInterpret(sArr, name, dim, rep) {
                 }
             } else {
                 suc = false;
-                otp = `${Format.Red}Error: 未知的操作在第 ${parseInt(i)+1} 行${Format.Clear}`;
+                otp = `${Format.Red}Error: 未知的操作在第 ${parseInt(i) + 1} 行${Format.Clear}`;
                 continue;
             }
             // autodelay
             if (delayStack.length != 0) {
-                await sleep(delayStack[delayStack.length-1] * 1000);
+                await sleep(delayStack[delayStack.length - 1] * 1000);
             }
         }
         if (endStack.length != 0) {
@@ -270,8 +272,8 @@ function circle2d(res, arr) {
     var stp = dif / res.steps;
     for (var i = 0; i <= res.steps; i++) {
         // 计算点位
-        var rad = (res.fromAng + i*stp) * Math.PI / 180;
-        arr.push(`${res.origin.x - Math.sin(rad)*res.radius} ${res.origin.y} ${res.origin.z + Math.cos(rad)*res.radius}`);
+        var rad = (res.fromAng + i * stp) * Math.PI / 180;
+        arr.push(`${res.origin.x - Math.sin(rad) * res.radius} ${res.origin.y} ${res.origin.z + Math.cos(rad) * res.radius}`);
     }
     arr.push("end");
     arr.push("end");
@@ -291,8 +293,8 @@ function circular_helix(res, arr) {
     var hei = res.height / res.steps;
     for (var i = 0; i <= res.steps; i++) {
         // 计算点位
-        var rad = (res.fromAng + i*stp) * Math.PI / 180;
-        arr.push(`${res.origin.x - Math.sin(rad)*res.radius} ${res.origin.y + i*hei} ${res.origin.z + Math.cos(rad)*res.radius} facing ${res.origin.x} ${res.origin.y + i*hei} ${res.origin.z}`);
+        var rad = (res.fromAng + i * stp) * Math.PI / 180;
+        arr.push(`${res.origin.x - Math.sin(rad) * res.radius} ${res.origin.y + i * hei} ${res.origin.z + Math.cos(rad) * res.radius} facing ${res.origin.x} ${res.origin.y + i * hei} ${res.origin.z}`);
     }
     arr.push("end");
     arr.push("end");
@@ -307,7 +309,7 @@ function simple_circle(res, pos, arr) {
     for (var i = 0; i <= 360; i++) {
         // 计算点位
         var rad = i * Math.PI / 180;
-        arr.push(`${pos.x - Math.sin(rad)*res.radius} ${pos.y} ${pos.z + Math.cos(rad)*res.radius}`);
+        arr.push(`${pos.x - Math.sin(rad) * res.radius} ${pos.y} ${pos.z + Math.cos(rad) * res.radius}`);
     }
     arr.push("end");
     arr.push("end");
@@ -435,355 +437,359 @@ mc.listen("onServerStarted", () => {
     pc_cmd.setCallback((_cmd, ori, out, res) => {
         // 仅能通过玩家执行
         if (ori.player == null) {
-            out.error("命令只能被玩家执行");
-        } else {
-            // 获取玩家名
-            var name = ori.player.name;
-            switch (res.action) {
-                case "clear":
-                    // clear选项, 清除相机效果，停止执行脚本
-                    db.delete(`${name}.exec`);
-                    mc.runcmdEx(`camera "${name}" clear`);
-                    mc.runcmdEx(`camerashake stop "${name}"`);
-                    out.success("已清除所有相机效果");
-                    break;
+            return out.error("命令只能被玩家执行");
+        }
+        // 编辑模式下不可执行
+        var ok = db.get(`${ori.player.name}.edit`);
+        if (ok != null) {
+            return out.error("命令不可用", "您正处于编辑模式");
+        }
+        // 获取玩家名
+        var name = ori.player.name;
+        switch (res.action) {
+            case "clear":
+                // clear选项, 清除相机效果，停止执行脚本
+                db.delete(`${name}.exec`);
+                mc.runcmdEx(`camera "${name}" clear`);
+                mc.runcmdEx(`camerashake stop "${name}"`);
+                out.success("已清除所有相机效果");
+                break;
 
-                case "eval":
-                    // eval选项, 相当于下放camera指令
-                    var rst;
-                    rst = mc.runcmdEx(`camera "${name}" ${res.cmd}`);
-                    if (rst.success) {
-                        out.success(rst.output);
-                    } else {
-                        out.error(rst.output);
-                        return;
-                    }
-                    break;
+            case "eval":
+                // eval选项, 相当于下放camera指令
+                var rst;
+                rst = mc.runcmdEx(`camera "${name}" ${res.cmd}`);
+                if (rst.success) {
+                    out.success(rst.output);
+                } else {
+                    out.error(rst.output);
+                    return;
+                }
+                break;
 
-                case "shake":
-                    // shake选项, 相当于下放camerashake add指令
-                    var rst = mc.runcmdEx(`camerashake add "${name}" ${res.cmd}`);
-                    if (rst.success) {
-                        out.success(rst.output);
-                    } else {
-                        out.error(rst.output);
-                        return;
-                    }
-                    break;
+            case "shake":
+                // shake选项, 相当于下放camerashake add指令
+                var rst = mc.runcmdEx(`camerashake add "${name}" ${res.cmd}`);
+                if (rst.success) {
+                    out.success(rst.output);
+                } else {
+                    out.error(rst.output);
+                    return;
+                }
+                break;
 
-                case "me":
-                    // me子命令，查询自身坐标信息
-                    out.addMessage(`LLSE-PCamera v${VERSION}`);
-                    var pos = ori.player.pos;
-                    var ang = ori.player.direction;
-                    out.addMessage(`${Format.Aqua}x:${Format.Clear} ${pos.x}`);
-                    out.addMessage(`${Format.Aqua}y:${Format.Clear} ${pos.y}`);
-                    out.addMessage(`${Format.Aqua}z:${Format.Clear} ${pos.z}`);
-                    out.addMessage(`${Format.Blue}维度id:${Format.Clear} ${pos.dimid}`);
-                    out.addMessage(`${Format.Green}俯仰角:${Format.Clear} ${ang.pitch}`);
-                    out.addMessage(`${Format.Green}旋转角:${Format.Clear} ${ang.yaw}`);
-                    break;
-                
-                case "point":
-                    // point子命令，提供点位操作 
-                    switch (res.pointAction) {
-                        case "save":
-                            // save选项，将当前点保存至点位寄存器
-                            var pos = ori.player.pos;
-                            var ang = ori.player.direction;
-                            var ok = db.set(`${name}.${res.point}`, `${pos.x} ${pos.y} ${pos.z} ${pos.dimid} ${ang.pitch} ${ang.yaw}`);
-                            if (!ok) {
-                                out.error("无法存储点位至数据库");
-                                return;
-                            }
-                            ok = db.set(`${name}.${res.point}c`, res.comment);
-                            if (!ok) {
-                                out.error("无法存储注释至数据库");
-                                return;
-                            }
-                            out.success("点位已保存")
-                            break;
+            case "me":
+                // me子命令，查询自身坐标信息
+                out.addMessage(`LLSE-PCamera v${VERSION}`);
+                var pos = ori.player.pos;
+                var ang = ori.player.direction;
+                out.addMessage(`${Format.Aqua}x:${Format.Clear} ${pos.x}`);
+                out.addMessage(`${Format.Aqua}y:${Format.Clear} ${pos.y}`);
+                out.addMessage(`${Format.Aqua}z:${Format.Clear} ${pos.z}`);
+                out.addMessage(`${Format.Blue}维度id:${Format.Clear} ${pos.dimid}`);
+                out.addMessage(`${Format.Green}俯仰角:${Format.Clear} ${ang.pitch}`);
+                out.addMessage(`${Format.Green}旋转角:${Format.Clear} ${ang.yaw}`);
+                break;
 
-                        case "view":
-                            // view选项，将视角切到选中点位
-                            // 判断是不是访问别人的点位
-                            var owner;
-                            if (res.owner != null) {
-                                if (name != res.owner && !PUB_POINT) {
-                                    out.error("未开启此功能");
-                                    return;
-                                }
-                                owner = res.owner;
-                            } else {
-                                owner = name;
-                            }
-                            // 设置延时
-                            if (res.delay != null) {
-                                if (res.delay < 0 || res.delay > 10) {
-                                    out.error("无效的延时");
-                                    return;
-                                }
-                                // 如果有延时，就设置延时执行。但是直接setTimeout是不行的，会拿不到对象
-                                // 所以我们先保存id，之后再动态获取
-                                if (res.delay != 0) {
-                                    setTimeoutWithArgs((name, poi, own) => {
-                                        var pl = mc.getPlayer(name);
-                                        if (pl != null) {
-                                            pl.runcmd(`pc point view ${poi} 0 "${own}"`);
-                                        }
-                                    }, res.delay*1000, name, res.point, owner);
-                                    return;
-                                }
-                            }
-                            var s = db.get(`${owner}.${res.point}`);
-                            if (s == null) {
-                                out.error("点位未定义");
-                                return;
-                            }
-                            var p = s.split(" ");
-                            if (ori.player.pos.dimid.toString() != p[3]) {
-                                out.error("维度不同");
-                                return;
-                            }
-                            var rst = mc.runcmdEx(`camera "${name}" set minecraft:free pos ${p[0]} ${p[1]} ${p[2]} rot ${p[4]} ${p[5]}`);
-                            if (rst.success) {
-                                out.success(rst.output);
-                            } else {
-                                out.error(rst.output);
-                                return;
-                            }
-                            break;
-
-                        case "rm":
-                            // rm选项，删除点位信息
-                            db.delete(`${name}.${res.point}`);
-                            db.delete(`${name}.${res.point}c`);
-                            out.success("成功删除点位");
-                            break;
-
-                        case "ls":
-                            // ls选项，列出玩家所有点位
-                            var sarr = new Array();
-                            for (var i = 1; i < 9; i++) {
-                                var s = db.get(`${name}.p${i}`);
-                                if (s == null) {
-                                    sarr.push(`${Format.MinecoinGold}点位p${i}: Undefined.${Format.Clear}`);
-                                    continue;
-                                }
-                                var sa = s.split(" ");
-                                var c = db.get(`${name}.p${i}c`);
-                                sarr.push(`${Format.Yellow}点位p${i}:${Format.Clear}`);
-                                sarr.push(`${Format.Aqua}x:${Format.Clear} ${sa[0]}`);
-                                sarr.push(`${Format.Aqua}y:${Format.Clear} ${sa[1]}`);
-                                sarr.push(`${Format.Aqua}z:${Format.Clear} ${sa[2]}`);
-                                sarr.push(`${Format.Blue}维度id:${Format.Clear} ${sa[3]}`);
-                                sarr.push(`${Format.Green}俯仰角:${Format.Clear} ${sa[4]}`);
-                                sarr.push(`${Format.Green}旋转角:${Format.Clear} ${sa[5]}`);
-                                sarr.push(`${Format.Gray}注释:${Format.Clear} ${c}`);
-                            }
-                            var fm = mc.newSimpleForm().setTitle(`${Format.Gold}玩家 ${name} 的点位信息:${Format.Clear}`).setContent(sarr.join("\n"));
-                            ori.player.sendForm(fm, (_pl, _id) => {return});
-                            break;
-
-                        default:
-                            // 无匹配项则报错
-                            out.error("pc: point: 未知的操作");
-                    }
-                    break;
-
-                case "script":
-                    // script子命令，提供脚本操作
-                    switch (res.scriptAction) {
-                        // edit选项，进入编辑模式
-                        case "edit":
-                            var path = DATAPATH + `scripts\\${name}\\`;
-                            if (!File.checkIsDir(path)) {
-                                File.mkdir(path)
-                            }
-                            db.set(`${name}.edit`, res.name);
-                            if (File.exists(path + `${res.name}.txt`) && !File.checkIsDir(path + `${res.name}.txt`)) {
-                                var f = File.readFrom(path + `${res.name}.txt`);
-                                if (f != null) {
-                                    var fa = f.split(/\r?\n|(?<!\n)\r/);
-                                    fa.unshift(fa.length+1);
-                                    db.set(`${name}.buf`, fa);
-                                } else {
-                                    out.error("读取旧的文件失败");
-                                }
-                            }
-                            out.success("已进入编辑模式");
-                            break;
-
-                        case "rm":
-                            // rm选项，删除脚本
-                            var path = DATAPATH + `scripts\\${name}\\${res.name}.txt`;
-                            if (File.exists(path) && !File.checkIsDir(path)) {
-                                var ok = File.delete(path);
-                                if (ok) {
-                                    out.success("已成功删除");
-                                } else {
-                                    out.error("删除失败");
-                                }
-                            } else {
-                                out.error("脚本不存在");
-                            }
-                            break;
-                        
-                        case "cat":
-                            // cat选项，列出脚本内容
-                            var path = DATAPATH + `scripts\\${name}\\${res.name}.txt`;
-                            if (File.exists(path) && !File.checkIsDir(path)) {
-                                var f = File.readFrom(path);
-                                if (f != null) {
-                                    var fa = f.split(/\r?\n|(?<!\n)\r/);
-                                    for (var i in fa) {
-                                        fa[i] = (`${Format.Aqua}${parseInt(i)+1} |${Format.Clear} ${fa[i]}`);
-                                    }
-                                    var fm = mc.newSimpleForm().setTitle(res.name).setContent(fa.join("\n"));
-                                    ori.player.sendForm(fm, (_pl, _id) => {return});
-                                } else {
-                                    out.error("读取失败");
-                                }
-                            } else {
-                                out.error("脚本不存在");
-                            }
-                            break;
-                        
-                        case "exec":
-                            // exec选项，执行脚本
-                            // 这一段很多源码直接照搬上面的view
-                            // 判断是不是访问别人的脚本
-                            var owner;
-                            if (res.owner != null) {
-                                if (name != res.owner && !PUB_SCRIPT) {
-                                    out.error("未开启此功能");
-                                    return;
-                                }
-                                owner = res.owner;
-                            } else {
-                                owner = name;
-                            }
-                            // 设置延时
-                            if (res.delay != null) {
-                                if (res.delay < 0 || res.delay > 10) {
-                                    out.error("无效的延时");
-                                    return;
-                                }
-                                // 如果有延时，就设置延时执行。但是直接setTimeout是不行的，会拿不到对象
-                                // 所以我们先保存id，之后再动态获取
-                                if (res.delay != 0) {
-                                    setTimeoutWithArgs((name, scr, own) => {
-                                        var pl = mc.getPlayer(name);
-                                        if (pl != null) {
-                                            pl.runcmd(`pc script exec ${scr} 0 "${own}"`);
-                                        }
-                                    }, res.delay*1000, name, res.name, owner);
-                                    return;
-                                }
-                            }
-                            var path = DATAPATH + `scripts\\${owner}\\${res.name}.txt`;
-                            if (File.exists(path) && !File.checkIsDir(path)) {
-                                // 读取文件
-                                var f = File.readFrom(path);
-                                if (f != null) {
-                                    var fa = f.split(/\r?\n|(?<!\n)\r/);
-                                    out.addMessage(`开始读取并执行Script: ${res.name}`);
-                                    var loc = db.get(`${name}.exec`);
-                                    if (loc != null) {
-                                        out.error("已有脚本正在运行");
-                                    } else {
-                                        // 加锁
-                                        db.set(`${name}.exec`, true);
-                                        // 丢给“解释器”就完事了
-                                        scriptInterpret(fa, name, ori.player.pos.dimid, res.repeat);
-                                        out.success(`任务已添加`);
-                                    }
-                                } else {
-                                    out.error("读取失败");
-                                }
-                            } else {
-                                out.error("脚本不存在");
-                            }
-                            break;
-
-                        case "ls":
-                            // ls选项，列出所有脚本
-                            var path = DATAPATH + `scripts\\${name}\\`;
-                            if (File.exists(path) && File.checkIsDir(path)) {
-                                var f = File.getFilesList(path);
-                                if (f.length != 0) {
-                                    for (var i in f) {
-                                        f[i] = `${Format.Aqua}${parseInt(i)+1} |${Format.Clear} ${f[i].slice(0, -4)}`;
-                                    }
-                                    var fm = mc.newSimpleForm().setTitle("Scripts").setContent(f.join("\n"));
-                                    ori.player.sendForm(fm, (_pl, _id) => {return});
-                                } else {
-                                    out.error("目录下没有脚本");
-                                }
-                            } else {
-                                out.error("您未创建过脚本");
-                            }
-                            break;
-                        
-                        default:
-                            // 无匹配项则删除
-                            out.error("pc: script: 未知的操作");
-                    }
-                    break;
-
-                case "preset":
-                    // preset子命令，提供部分预设
-                    var arr = new Array();
-                    switch (res.presetAction) {
-                        case "circle2d":
-                            // circle2d选项，提供基础的画圆操作
-                            arr.push("# circle2d vvv");
-                            circle2d(res, arr);
-                            arr.push("# circle2d ^^^");
-                            break;
-                        case "circular_helix":
-                            // circularHelix选项，提供基础的圆柱螺线操作
-                            arr.push("# circular_helix vvv")
-                            circular_helix(res, arr);
-                            arr.push("# circular_helix ^^^")
-                            break;
-                        case "simple_circle":
-                            // simple_circle选项，简化画圆操作
-                            arr.push("# simple_circle vvv")
-                            simple_circle(res, ori.player.pos, arr);
-                            arr.push("# simple_circle ^^^")
-                            break;
-                        default:
-                            // 无匹配项则报错
-                            out.error("pc: preset: 未知的操作");
-                    }
-                    if (res.presetToDo == "exec") {
-                        // 直接执行
-                        out.addMessage(`开始执行Script`);
-                        var loc = db.get(`${name}.exec`);
-                        if (loc != null) {
-                            out.error("已有脚本正在运行");
-                        } else {
-                            // 加锁
-                            db.set(`${name}.exec`, true);
-                            // 丢给“解释器”就完事了
-                            scriptInterpret(arr, name, ori.player.pos.dimid, false);
-                            out.success(`任务已添加`);
+            case "point":
+                // point子命令，提供点位操作 
+                switch (res.pointAction) {
+                    case "save":
+                        // save选项，将当前点保存至点位寄存器
+                        var pos = ori.player.pos;
+                        var ang = ori.player.direction;
+                        var ok = db.set(`${name}.${res.point}`, `${pos.x} ${pos.y} ${pos.z} ${pos.dimid} ${ang.pitch} ${ang.yaw}`);
+                        if (!ok) {
+                            out.error("无法存储点位至数据库");
+                            return;
                         }
-                    } else {
-                        // 写入脚本
+                        ok = db.set(`${name}.${res.point}c`, res.comment);
+                        if (!ok) {
+                            out.error("无法存储注释至数据库");
+                            return;
+                        }
+                        out.success("点位已保存")
+                        break;
+
+                    case "view":
+                        // view选项，将视角切到选中点位
+                        // 判断是不是访问别人的点位
+                        var owner;
+                        if (res.owner != null) {
+                            if (name != res.owner && !PUB_POINT) {
+                                out.error("未开启此功能");
+                                return;
+                            }
+                            owner = res.owner;
+                        } else {
+                            owner = name;
+                        }
+                        // 设置延时
+                        if (res.delay != null) {
+                            if (res.delay < 0 || res.delay > 10) {
+                                out.error("无效的延时");
+                                return;
+                            }
+                            // 如果有延时，就设置延时执行。但是直接setTimeout是不行的，会拿不到对象
+                            // 所以我们先保存id，之后再动态获取
+                            if (res.delay != 0) {
+                                setTimeoutWithArgs((name, poi, own) => {
+                                    var pl = mc.getPlayer(name);
+                                    if (pl != null) {
+                                        pl.runcmd(`pc point view ${poi} 0 "${own}"`);
+                                    }
+                                }, res.delay * 1000, name, res.point, owner);
+                                return;
+                            }
+                        }
+                        var s = db.get(`${owner}.${res.point}`);
+                        if (s == null) {
+                            out.error("点位未定义");
+                            return;
+                        }
+                        var p = s.split(" ");
+                        if (ori.player.pos.dimid.toString() != p[3]) {
+                            out.error("维度不同");
+                            return;
+                        }
+                        var rst = mc.runcmdEx(`camera "${name}" set minecraft:free pos ${p[0]} ${p[1]} ${p[2]} rot ${p[4]} ${p[5]}`);
+                        if (rst.success) {
+                            out.success(rst.output);
+                        } else {
+                            out.error(rst.output);
+                            return;
+                        }
+                        break;
+
+                    case "rm":
+                        // rm选项，删除点位信息
+                        db.delete(`${name}.${res.point}`);
+                        db.delete(`${name}.${res.point}c`);
+                        out.success("成功删除点位");
+                        break;
+
+                    case "ls":
+                        // ls选项，列出玩家所有点位
+                        var sarr = new Array();
+                        for (var i = 1; i < 9; i++) {
+                            var s = db.get(`${name}.p${i}`);
+                            if (s == null) {
+                                sarr.push(`${Format.MinecoinGold}点位p${i}: Undefined.${Format.Clear}`);
+                                continue;
+                            }
+                            var sa = s.split(" ");
+                            var c = db.get(`${name}.p${i}c`);
+                            sarr.push(`${Format.Yellow}点位p${i}:${Format.Clear}`);
+                            sarr.push(`${Format.Aqua}x:${Format.Clear} ${sa[0]}`);
+                            sarr.push(`${Format.Aqua}y:${Format.Clear} ${sa[1]}`);
+                            sarr.push(`${Format.Aqua}z:${Format.Clear} ${sa[2]}`);
+                            sarr.push(`${Format.Blue}维度id:${Format.Clear} ${sa[3]}`);
+                            sarr.push(`${Format.Green}俯仰角:${Format.Clear} ${sa[4]}`);
+                            sarr.push(`${Format.Green}旋转角:${Format.Clear} ${sa[5]}`);
+                            sarr.push(`${Format.Gray}注释:${Format.Clear} ${c}`);
+                        }
+                        var fm = mc.newSimpleForm().setTitle(`${Format.Gold}玩家 ${name} 的点位信息:${Format.Clear}`).setContent(sarr.join("\n"));
+                        ori.player.sendForm(fm, (_pl, _id) => { return });
+                        break;
+
+                    default:
+                        // 无匹配项则报错
+                        out.error("pc: point: 未知的操作");
+                }
+                break;
+
+            case "script":
+                // script子命令，提供脚本操作
+                switch (res.scriptAction) {
+                    // edit选项，进入编辑模式
+                    case "edit":
                         var path = DATAPATH + `scripts\\${name}\\`;
                         if (!File.checkIsDir(path)) {
-                        File.mkdir(path);
+                            File.mkdir(path)
                         }
-                        File.writeLine(path + `${res.name}.txt`,arr.join("\n"));
-                        out.success("已写入脚本");
+                        db.set(`${name}.edit`, res.name);
+                        if (File.exists(path + `${res.name}.txt`) && !File.checkIsDir(path + `${res.name}.txt`)) {
+                            var f = File.readFrom(path + `${res.name}.txt`);
+                            if (f != null) {
+                                var fa = f.split(/\r?\n|(?<!\n)\r/);
+                                fa.unshift(fa.length + 1);
+                                db.set(`${name}.buf`, fa);
+                            } else {
+                                out.error("读取旧的文件失败");
+                            }
+                        }
+                        out.success("已进入编辑模式");
+                        break;
+
+                    case "rm":
+                        // rm选项，删除脚本
+                        var path = DATAPATH + `scripts\\${name}\\${res.name}.txt`;
+                        if (File.exists(path) && !File.checkIsDir(path)) {
+                            var ok = File.delete(path);
+                            if (ok) {
+                                out.success("已成功删除");
+                            } else {
+                                out.error("删除失败");
+                            }
+                        } else {
+                            out.error("脚本不存在");
+                        }
+                        break;
+
+                    case "cat":
+                        // cat选项，列出脚本内容
+                        var path = DATAPATH + `scripts\\${name}\\${res.name}.txt`;
+                        if (File.exists(path) && !File.checkIsDir(path)) {
+                            var f = File.readFrom(path);
+                            if (f != null) {
+                                var fa = f.split(/\r?\n|(?<!\n)\r/);
+                                for (var i in fa) {
+                                    fa[i] = (`${Format.Aqua}${parseInt(i) + 1} |${Format.Clear} ${fa[i]}`);
+                                }
+                                var fm = mc.newSimpleForm().setTitle(res.name).setContent(fa.join("\n"));
+                                ori.player.sendForm(fm, (_pl, _id) => { return });
+                            } else {
+                                out.error("读取失败");
+                            }
+                        } else {
+                            out.error("脚本不存在");
+                        }
+                        break;
+
+                    case "exec":
+                        // exec选项，执行脚本
+                        // 这一段很多源码直接照搬上面的view
+                        // 判断是不是访问别人的脚本
+                        var owner;
+                        if (res.owner != null) {
+                            if (name != res.owner && !PUB_SCRIPT) {
+                                out.error("未开启此功能");
+                                return;
+                            }
+                            owner = res.owner;
+                        } else {
+                            owner = name;
+                        }
+                        // 设置延时
+                        if (res.delay != null) {
+                            if (res.delay < 0 || res.delay > 10) {
+                                out.error("无效的延时");
+                                return;
+                            }
+                            // 如果有延时，就设置延时执行。但是直接setTimeout是不行的，会拿不到对象
+                            // 所以我们先保存id，之后再动态获取
+                            if (res.delay != 0) {
+                                setTimeoutWithArgs((name, scr, own) => {
+                                    var pl = mc.getPlayer(name);
+                                    if (pl != null) {
+                                        pl.runcmd(`pc script exec ${scr} 0 "${own}"`);
+                                    }
+                                }, res.delay * 1000, name, res.name, owner);
+                                return;
+                            }
+                        }
+                        var path = DATAPATH + `scripts\\${owner}\\${res.name}.txt`;
+                        if (File.exists(path) && !File.checkIsDir(path)) {
+                            // 读取文件
+                            var f = File.readFrom(path);
+                            if (f != null) {
+                                var fa = f.split(/\r?\n|(?<!\n)\r/);
+                                out.addMessage(`开始读取并执行Script: ${res.name}`);
+                                var loc = db.get(`${name}.exec`);
+                                if (loc != null) {
+                                    out.error("已有脚本正在运行");
+                                } else {
+                                    // 加锁
+                                    db.set(`${name}.exec`, true);
+                                    // 丢给“解释器”就完事了
+                                    scriptInterpret(fa, name, ori.player.pos.dimid, res.repeat);
+                                    out.success(`任务已添加`);
+                                }
+                            } else {
+                                out.error("读取失败");
+                            }
+                        } else {
+                            out.error("脚本不存在");
+                        }
+                        break;
+
+                    case "ls":
+                        // ls选项，列出所有脚本
+                        var path = DATAPATH + `scripts\\${name}\\`;
+                        if (File.exists(path) && File.checkIsDir(path)) {
+                            var f = File.getFilesList(path);
+                            if (f.length != 0) {
+                                for (var i in f) {
+                                    f[i] = `${Format.Aqua}${parseInt(i) + 1} |${Format.Clear} ${f[i].slice(0, -4)}`;
+                                }
+                                var fm = mc.newSimpleForm().setTitle("Scripts").setContent(f.join("\n"));
+                                ori.player.sendForm(fm, (_pl, _id) => { return });
+                            } else {
+                                out.error("目录下没有脚本");
+                            }
+                        } else {
+                            out.error("您未创建过脚本");
+                        }
+                        break;
+
+                    default:
+                        // 无匹配项则删除
+                        out.error("pc: script: 未知的操作");
+                }
+                break;
+
+            case "preset":
+                // preset子命令，提供部分预设
+                var arr = new Array();
+                switch (res.presetAction) {
+                    case "circle2d":
+                        // circle2d选项，提供基础的画圆操作
+                        arr.push("# circle2d vvv");
+                        circle2d(res, arr);
+                        arr.push("# circle2d ^^^");
+                        break;
+                    case "circular_helix":
+                        // circularHelix选项，提供基础的圆柱螺线操作
+                        arr.push("# circular_helix vvv")
+                        circular_helix(res, arr);
+                        arr.push("# circular_helix ^^^")
+                        break;
+                    case "simple_circle":
+                        // simple_circle选项，简化画圆操作
+                        arr.push("# simple_circle vvv")
+                        simple_circle(res, ori.player.pos, arr);
+                        arr.push("# simple_circle ^^^")
+                        break;
+                    default:
+                        // 无匹配项则报错
+                        out.error("pc: preset: 未知的操作");
+                }
+                if (res.presetToDo == "exec") {
+                    // 直接执行
+                    out.addMessage(`开始执行Script`);
+                    var loc = db.get(`${name}.exec`);
+                    if (loc != null) {
+                        out.error("已有脚本正在运行");
+                    } else {
+                        // 加锁
+                        db.set(`${name}.exec`, true);
+                        // 丢给“解释器”就完事了
+                        scriptInterpret(arr, name, ori.player.pos.dimid, false);
+                        return out.success(`任务已添加`);
                     }
-                    break;
-                default:
-                    // 无匹配项则报错
-                    out.error("pc: 未知的操作");
-            }
+                } else {
+                    // 写入脚本
+                    var path = DATAPATH + `scripts\\${name}\\`;
+                    if (!File.checkIsDir(path)) {
+                        File.mkdir(path);
+                    }
+                    File.writeLine(path + `${res.name}.txt`, arr.join("\n"));
+                    return out.success("已写入脚本");
+                }
+                break;
+            default:
+                // 无匹配项则报错
+                return out.error("pc: 未知的操作");
         }
     });
 
@@ -838,7 +844,7 @@ mc.listen("onChat", (pl, msg) => {
             if (na != null && na != "") {
                 efn = na;
             }
-            File.writeTo(DATAPATH + `scripts\\${name}\\${efn}.txt`,arr.slice(1).join("\n").trim());
+            File.writeTo(DATAPATH + `scripts\\${name}\\${efn}.txt`, arr.slice(1).join("\n").trim());
             pl.tell("文件已写入");
         } else if (msg.startsWith(":d ")) {
             // 删除一行
@@ -892,18 +898,6 @@ mc.listen("onChat", (pl, msg) => {
             db.set(`${name}.buf`, arr);
         }
         return false;
-    }
-    return true;
-});
-
-// 编辑模式下阻断执行pc命令
-mc.listen("onPlayerCmd", (pl, cmd) => {
-    var ok = db.get(`${pl.name}.edit`);
-    if (ok != null) {
-        if (cmd.startsWith("pc") || cmd.startsWith("cam")) {
-            pl.sendToast("命令不可用", "您正处于编辑模式");
-            return false;
-        }
     }
     return true;
 });

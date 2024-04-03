@@ -442,7 +442,7 @@ mc.listen("onServerStarted", () => {
         // 编辑模式下不可执行
         var ok = db.get(`${ori.player.name}.edit`);
         if (ok != null) {
-            return out.error("命令不可用", "您正处于编辑模式");
+            return out.error("命令不可用: 您正处于编辑模式");
         }
         // 获取玩家名
         var name = ori.player.name;
@@ -786,6 +786,7 @@ mc.listen("onChat", (pl, msg) => {
             db.delete(`${name}.edit`);
             db.delete(`${name}.buf`);
             pl.tell("已退出编辑模式");
+            return false;
         } else if (msg == ":p") {
             // 打印缓冲区
             var arr = db.get(`${name}.buf`);
@@ -798,6 +799,7 @@ mc.listen("onChat", (pl, msg) => {
                 pl.tell(`${Format.Aqua}${i} |${Format.Clear} ${arr[i]}`);
             }
             pl.tell(`${Format.Aqua}---EOF---${Format.Clear}`);
+            return false;
         } else if (msg == ":m") {
             // 查询自己当前位置
             var pos = pl.pos;
@@ -808,6 +810,7 @@ mc.listen("onChat", (pl, msg) => {
             pl.tell(`${Format.Blue}维度id:${Format.Clear} ${pos.dimid}`);
             pl.tell(`${Format.Green}俯仰角:${Format.Clear} ${ang.pitch}`);
             pl.tell(`${Format.Green}旋转角:${Format.Clear} ${ang.yaw}`);
+            return false;
         } else if (msg == ":w" || msg.startsWith(":w ")) {
             // 写入文件
             var na;
@@ -824,6 +827,7 @@ mc.listen("onChat", (pl, msg) => {
             }
             File.writeTo(DATAPATH + `scripts\\${name}\\${efn}.txt`, arr.slice(1).join("\n").trim());
             pl.tell("文件已写入");
+            return false;
         } else if (msg.startsWith(":d ")) {
             // 删除一行
             var ln = parseInt(msg.substring(3));
@@ -844,6 +848,7 @@ mc.listen("onChat", (pl, msg) => {
             pl.tell(`删除了第 ${ln} 行`);
             arr[0]--;
             db.set(`${name}.buf`, arr);
+            return false;
         } else if (msg.startsWith(":j ")) {
             // 跳转到行
             var ln = parseInt(msg.substring(3));
@@ -863,6 +868,7 @@ mc.listen("onChat", (pl, msg) => {
             arr[0] = ln;
             pl.tell(`跳转至第 ${ln} 行`);
             db.set(`${name}.buf`, arr);
+            return false;
         } else {
             // 写入缓冲区
             var arr = db.get(`${name}.buf`);
@@ -874,8 +880,9 @@ mc.listen("onChat", (pl, msg) => {
             pl.tell(`${Format.Aqua}[${Format.Green}+${Format.Aqua}]${Format.Green}${arr[0]} ${Format.Aqua}| ${Format.Clear}${arr[arr[0]]}`);
             arr[0]++;
             db.set(`${name}.buf`, arr);
+            return false;
         }
-        return false;
+    } else {
+        return true;
     }
-    return true;
 });

@@ -213,11 +213,55 @@ function scriptInterpret(sArr, name) {
             // 执行camera操作
             var cs = "";
             if (originStack.length != 0 && !breakDecorator) {
-                cs = `execute at ${originStack[originStack.length - 1]} run `
+                cs = `execute at ${originStack[originStack.length - 1]} run `;
             }
             var acti = s.substring(4);
             ret.push("cmd");
             ret.push(cs + `camera "${name}" ${acti}`);
+        } else if (s.startsWith("preset ")) {
+            // 执行preset
+            var acti = s.substring(7);
+            if (acti.startsWith("circle2d ")) {
+                var para = acti.substring(9).trim().split(" ");
+                if (para.length != 11) {
+                    suc = false;
+                    otp = `${Format.Red}Error: 错误的参数数目在第 ${parseInt(i) + 1} 行${Format.Clear}`;
+                    continue;
+                }
+                var p = [parseFloat(para[0]), parseFloat(para[1]), parseFloat(para[2]), parseFloat(para[3]), parseFloat(para[4]), parseFloat(para[5]), parseInt(para[6]), parseFloat(para[7]), parseFloat(para[8]), parseFloat(para[9]), parseFloat(para[10])];
+                if (isNaN(p[0]) || isNaN(p[1]) || isNaN(p[2]) || isNaN(p[3]) || isNaN(p[4]) || isNaN(p[5]) || isNaN(p[6]) || isNaN(p[7]) || isNaN(p[8]) || isNaN(p[9]) || isNaN(p[10])) {
+                    suc = false;
+                    otp = `${Format.Red}Error: 无效的输入在第 ${parseInt(i) + 1} 行${Format.Clear}`;
+                    continue;
+                }
+                var arg = { origin: { x: p[0], y: p[1], z: p[2] }, radius: p[3], fromAng: p[4], toAng: p[5], steps: p[6], timePerStep: p[7], facing: { x: p[8], y: p[9], z: p[10] } };
+                var arr = new Array();
+                circle2d(arg, arr);
+                var cache = scriptInterpret(arr, name);
+                for (var i = 1; i < cache.length - 1; i++) { ret.push(cache[i]); }
+            } else if (acti.startsWith("circular_helix ")) {
+                var para = acti.substring(15).trim().split(" ");
+                if (para.length != 9) {
+                    suc = false;
+                    otp = `${Format.Red}Error: 错误的参数数目在第 ${parseInt(i) + 1} 行${Format.Clear}`;
+                    continue;
+                }
+                var p = [parseFloat(para[0]), parseFloat(para[1]), parseFloat(para[2]), parseFloat(para[3]), parseFloat(para[4]), parseFloat(para[5]), parseInt(para[6]), parseFloat(para[7]), parseFloat(para[8])];
+                if (isNaN(p[0]) || isNaN(p[1]) || isNaN(p[2]) || isNaN(p[3]) || isNaN(p[4]) || isNaN(p[5]) || isNaN(p[6]) || isNaN(p[7]) || isNaN(p[8])) {
+                    suc = false;
+                    otp = `${Format.Red}Error: 无效的输入在第 ${parseInt(i) + 1} 行${Format.Clear}`;
+                    continue;
+                }
+                var arg = { origin: { x: p[0], y: p[1], z: p[2] }, radius: p[3], fromAng: p[4], toAng: p[5], steps: p[6], timePerStep: p[7], height: p[8] };
+                var arr = new Array();
+                circular_helix(arg, arr);
+                var cache = scriptInterpret(arr, name);
+                for (var i = 1; i < cache.length - 1; i++) { ret.push(cache[i]); }
+            } else {
+                suc = false;
+                otp = `${Format.Red}Error: 未知的preset在第 ${parseInt(i) + 1} 行${Format.Clear}`;
+                continue;
+            }
         } else {
             suc = false;
             otp = `${Format.Red}Error: 未知的操作在第 ${parseInt(i) + 1} 行${Format.Clear}`;
@@ -505,7 +549,7 @@ mc.listen("onServerStarted", () => {
     pc_cmd.mandatory("facing", ParamType.Vec3);
     pc_cmd.overload(["PresetAction", "PresetCircle2dAction", "origin", "radius", "fromAng", "toAng", "steps", "timePerStep", "facing"]);
 
-    // pc preset circula_helix <origin> <radius> <fromAng> <toAng> <steps> <timePerStep> <height>
+    // pc preset circular_helix <origin> <radius> <fromAng> <toAng> <steps> <timePerStep> <height>
     pc_cmd.setEnum("PresetCircularHelixAction", ["circular_helix"]);
     pc_cmd.mandatory("presetAction", ParamType.Enum, "PresetCircularHelixAction", "PresetCircularHelixAction", 1);
     pc_cmd.mandatory("height", ParamType.Float);

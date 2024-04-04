@@ -4,6 +4,7 @@
 
 ## v1.9.0更新说明
 + 修复玩家名中有空格导致runcmd无法正确执行
++ 分离解释和执行逻辑，脚本解释后产生中间缓存
 
 ## 安装
 + 将 `LLSE-PCamera.js` 放进 `plugins/` 文件夹就行
@@ -32,8 +33,8 @@
 + `pc shake <text>` 相当于 `camerashake add @s <text>`
 
 ## 脚本
-+ `delay s` 延时（秒）。语句操作不会阻塞等待结果，故延时十分重要。
-+ `title "content" type fadeInTime stayTime fadeOutTime` content为标题内容（支持反斜杠转义双引号），末尾三个参数分别是淡入、停留、淡出时间。type取值如下：
++ `delay <s: float>` 延时（秒）。语句操作不会阻塞等待结果，故延时十分重要。
++ `title <content: string> <type: int> <fadeInTick: int> <stayTick: int> <fadeOutTick: int>` content为双引号包裹的标题内容（支持反斜杠转义双引号），末尾三个参数（未知原因已失效）分别是淡入、停留、淡出时间。type取值如下：
 
 | type参数 | 消息类型 |
 |---|---|
@@ -47,14 +48,15 @@
 | 7 | Json型副标题（SubtitleTextObject）
 | 8 | Json型Actionbar（ActionbarTextObject）
 
-+ `toast "text1" "text2"` text1和text2分别是toast上下两行内容（支持反斜杠转义双引号）。
++ `toast <text1: string> <text2: string>` text1和text2分别是双引号包裹的toast上下两行内容（支持反斜杠转义双引号）。
 + `shake <string>` 同上述 `pc shake`
 + `cam <string>` 同上述 `pc eval`
 + `head <string>` 在遇到下一个 `end` 或结尾前使用相同前缀
 + `tail <string>` 在遇到下一个 `end` 或结尾前使用相同后缀
-+ `autodelay <int>` 在遇到下一个 `end` 或结尾前每一条指令后都执行delay
-+ `origin <name>` 在遇到下一个 `end` 或结尾之前修饰 `cam` 选项，即变成 `execute at <target> run cam <name> <string>` 。这意味着 `cam` 里面的 `pos` 和 `facing` 将支持绝对坐标/相对坐标/局部坐标/玩家名称。
-+ `setdim <int>` 设置脚本执行的维度，不在同一维度的玩家将无法执行其之后的内容。建议设置在开头。可选值为0（主世界），1（地狱），2（末地）
++ `autodelay <s: int>` 在遇到下一个 `end` 或结尾前每一条指令后都执行delay
++ `origin <name: string>` 在遇到下一个 `end` 或结尾之前修饰 `cam` 选项，即变成 `execute at <target> run cam <name> <string>` 。这意味着 `cam` 里面的 `pos` 和 `facing` 将支持绝对坐标/相对坐标/局部坐标/玩家名称。
++ `setdim <dim: int>` 设置脚本执行的维度，不在同一维度的玩家将无法执行其之后的内容。建议设置在开头。可选值为0（主世界），1（地狱），2（末地）
++ `! <string>` 表示本行string内容不受head和tail修饰
 
 ## 编辑脚本
 + ` ` 内容前多输入一个空格即可正常发出，否则会被存进缓冲区

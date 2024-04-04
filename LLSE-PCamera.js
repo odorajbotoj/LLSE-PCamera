@@ -167,8 +167,10 @@ function scriptInterpret(sArr, name) {
         }
         // 处理功能语句
         var s = "";
+        var breakDecorator = false;
         if (sArr[i].startsWith("! ")) {
-            s = s.substring(2);
+            s = sArr[i].substring(2);
+            breakDecorator = true;
         } else {
             s = headStack.join(" ") + " " + sArr[i] + " " + tailStack.join(" ");
         }
@@ -210,7 +212,7 @@ function scriptInterpret(sArr, name) {
         } else if (s.startsWith("cam ")) {
             // 执行camera操作
             var cs = "";
-            if (originStack.length != 0) {
+            if (originStack.length != 0 && !breakDecorator) {
                 cs = `execute at ${originStack[originStack.length - 1]} run `
             }
             var acti = s.substring(4);
@@ -223,6 +225,7 @@ function scriptInterpret(sArr, name) {
         }
         // autodelay
         if (delayStack.length != 0) {
+            if (breakDecorator) { continue; }
             ret.push("delay");
             ret.push(`${delayStack[delayStack.length - 1]}`);
         }
@@ -233,6 +236,7 @@ function scriptInterpret(sArr, name) {
             pl.tell(`${Format.Yellow}Warning: 有未闭合的代码块${Format.Clear}`);
         }
     }
+    ret.push("ok");
     return ret;
 }
 
@@ -241,12 +245,21 @@ const sleep = (delay) => new Promise((resolve) => setTimeout(resolve, delay))
 async function scriptExecute(sArr, name, dim, rep) {
     // 这一部分重构过了，减少异步压力
     // 后来又重写了部分，减少了动态获取pl的次数，减小服务器压力
+    // 第三次重写，分离解释与执行逻辑
+    if (sArr[sArr.length - 1] != "ok") {
+        var pl = mc.getPlayer(name);
+        if (pl != null) {
+            pl.tell(`${Format.Red}损坏的缓存文件，请尝试清除缓存后重试${Format.Clear}`);
+        }
+        db.delete(`${name}.exec`);
+        return;
+    }
     var suc = true;
     var otp = "";
     var index = 1;
     do { // 1.7修改：增加循环执行功能
         index = 1;
-        while (index < sArr.length) {
+        while (index < sArr.length - 1) {
             // 决定是否继续执行
             if (!suc) {
                 var pl = mc.getPlayer(name);
@@ -277,13 +290,13 @@ async function scriptExecute(sArr, name, dim, rep) {
                 if (pl != null) {
                     suc = pl.setTitle(sArr[index + 1], parseInt(sArr[index + 2]), parseInt(sArr[index + 3]), parseInt(sArr[index + 4]), parseInt(sArr[index + 5]));
                     if (!suc) {
-                        otp = "无法发送title";
+                        otp = `${Format.Red}无法发送title${Format.Clear}`;
                     } else {
                         index += 6;
                     }
                 } else {
                     suc = false;
-                    otp = "无法获取玩家对象";
+                    otp = `${Format.Red}无法获取玩家对象${Format.Clear}`;
                 }
                 continue;
             } else if (sArr[index] == "toast") {
@@ -292,13 +305,13 @@ async function scriptExecute(sArr, name, dim, rep) {
                 if (pl != null) {
                     suc = pl.sendToast(sArr[index + 1], sArr[index + 2]);
                     if (!suc) {
-                        otp = "无法发送toast";
+                        otp = `${Format.Red}无法发送toast${Format.Clear}`;
                     } else {
                         index += 3;
                     }
                 } else {
                     suc = false;
-                    otp = "无法获取玩家对象";
+                    otp = `${Format.Red}无法获取玩家对象${Format.Clear}`;
                 }
                 continue;
             } else if (sArr[index] == "cmd") {
@@ -314,7 +327,7 @@ async function scriptExecute(sArr, name, dim, rep) {
                 // 检查维度
                 if (dim != parseInt(sArr[index + 1])) {
                     suc = false;
-                    otp = "维度不一致";
+                    otp = `${Format.Red}维度不一致${Format.Clear}`;
                 } else {
                     index += 2;
                 }
@@ -473,8 +486,12 @@ mc.listen("onServerStarted", () => {
     pc_cmd.mandatory("scriptAction", ParamType.Enum, "ScriptListAction", "ScriptListAction", 1);
     pc_cmd.overload(["ScriptAction", "ScriptListAction"]);
 
-    // pc preset circle2d <origin> <radius> <fromAng> <toAng> <steps> <timePerStep> <facing> exec
-    // pc preset circle2d <origin> <radius> <fromAng> <toAng> <steps> <timePerStep> <facing> save <name>
+    // pc script cleancache
+    pc_cmd.setEnum("ScriptCleanCacheAction", ["cleancache"]);
+    pc_cmd.mandatory("scriptAction", ParamType.Enum, "ScriptCleanCacheAction", "ScriptCleanCacheAction", 1);
+    pc_cmd.overload(["ScriptAction", "ScriptCleanCacheAction"]);
+
+    // pc preset circle2d <origin> <radius> <fromAng> <toAng> <steps> <timePerStep> <facing>
     pc_cmd.setEnum("PresetAction", ["preset"]);
     pc_cmd.mandatory("action", ParamType.Enum, "PresetAction", "PresetAction", 1);
     pc_cmd.setEnum("PresetCircle2dAction", ["circle2d"]);
@@ -486,27 +503,18 @@ mc.listen("onServerStarted", () => {
     pc_cmd.mandatory("steps", ParamType.Int);
     pc_cmd.mandatory("timePerStep", ParamType.Float);
     pc_cmd.mandatory("facing", ParamType.Vec3);
-    pc_cmd.setEnum("PresetExec", ["exec"]);
-    pc_cmd.mandatory("presetToDo", ParamType.Enum, "PresetExec", "PresetExec", 1);
-    pc_cmd.overload(["PresetAction", "PresetCircle2dAction", "origin", "radius", "fromAng", "toAng", "steps", "timePerStep", "facing", "PresetExec"]);
-    pc_cmd.setEnum("PresetSave", ["save"]);
-    pc_cmd.mandatory("presetToDo", ParamType.Enum, "PresetSave", "PresetSave", 1);
-    pc_cmd.overload(["PresetAction", "PresetCircle2dAction", "origin", "radius", "fromAng", "toAng", "steps", "timePerStep", "facing", "PresetSave", "name"]);
+    pc_cmd.overload(["PresetAction", "PresetCircle2dAction", "origin", "radius", "fromAng", "toAng", "steps", "timePerStep", "facing"]);
 
-    // pc preset circula_helix <origin> <radius> <fromAng> <toAng> <steps> <timePerStep> <height> exec
-    // pc preset circula_helix <origin> <radius> <fromAng> <toAng> <steps> <timePerStep> <height> save <name>
+    // pc preset circula_helix <origin> <radius> <fromAng> <toAng> <steps> <timePerStep> <height>
     pc_cmd.setEnum("PresetCircularHelixAction", ["circular_helix"]);
     pc_cmd.mandatory("presetAction", ParamType.Enum, "PresetCircularHelixAction", "PresetCircularHelixAction", 1);
     pc_cmd.mandatory("height", ParamType.Float);
-    pc_cmd.overload(["PresetAction", "PresetCircularHelixAction", "origin", "radius", "fromAng", "toAng", "steps", "timePerStep", "height", "PresetExec"]);
-    pc_cmd.overload(["PresetAction", "PresetCircularHelixAction", "origin", "radius", "fromAng", "toAng", "steps", "timePerStep", "height", "PresetSave", "name"]);
+    pc_cmd.overload(["PresetAction", "PresetCircularHelixAction", "origin", "radius", "fromAng", "toAng", "steps", "timePerStep", "height"]);
 
-    // pc preset simple_circle <radius> <timePerStep> exec
-    // pc preset simple_clrcle <radius> <timePerStep> save <name>
+    // pc preset simple_circle <radius> <timePerStep>
     pc_cmd.setEnum("PresetSimpleCircleAction", ["simple_circle"]);
     pc_cmd.mandatory("presetAction", ParamType.Enum, "PresetSimpleCircleAction", "PresetSimpleCircleAction", 1);
-    pc_cmd.overload(["PresetAction", "PresetSimpleCircleAction", "radius", "timePerStep", "PresetExec"]);
-    pc_cmd.overload(["PresetAction", "PresetSimpleCircleAction", "radius", "timePerStep", "PresetSave", "name"]);
+    pc_cmd.overload(["PresetAction", "PresetSimpleCircleAction", "radius", "timePerStep"]);
 
     // 设置回调函数
     pc_cmd.setCallback((_cmd, ori, out, res) => {
@@ -757,7 +765,9 @@ mc.listen("onServerStarted", () => {
                             var c; // cache array
                             if (fc == null) {
                                 // 解释脚本至缓存文件
+                                out.addMessage("正在解释脚本")
                                 c = scriptInterpret(fa, name);
+                                if (c[c.length - 1] != "ok") { return; }
                                 File.writeTo(DATAPATH + `scripts\\${owner}\\cache\\${res.name}.txt`, c.join("\n"));
                             } else {
                                 // 生成MD5
@@ -766,23 +776,24 @@ mc.listen("onServerStarted", () => {
                                 var fca = fc.split(/\r?\n|(?<!\n)\r/);
                                 if (md5 != fca[0]) {
                                     // 解释脚本至缓存文件
+                                    out.addMessage("正在解释脚本")
                                     c = scriptInterpret(fa, name);
+                                    if (c[c.length - 1] != "ok") { return; }
                                     File.writeTo(DATAPATH + `scripts\\${owner}\\cache\\${res.name}.txt`, c.join("\n"));
                                 } else {
                                     c = fca;
                                 }
-                                var loc = db.get(`${name}.exec`);
-                                if (loc != null) {
-                                    return out.error("已有脚本正在运行");
-                                } else {
-                                    // 加锁
-                                    db.set(`${name}.exec`, true);
-                                    // 丢给“执行器”就完事了
-                                    scriptExecute(c, name, ori.player.pos.dimid, res.repeat);
-                                    return out.success(`任务已添加`);
-                                }
                             }
-
+                            var loc = db.get(`${name}.exec`);
+                            if (loc != null) {
+                                return out.error("已有脚本正在运行");
+                            } else {
+                                // 加锁
+                                db.set(`${name}.exec`, true);
+                                // 丢给“执行器”就完事了
+                                scriptExecute(c, name, ori.player.pos.dimid, res.repeat);
+                                return out.success(`任务已添加`);
+                            }
                         } else {
                             return out.error("脚本不存在");
                         }
@@ -791,7 +802,13 @@ mc.listen("onServerStarted", () => {
                         // ls选项，列出所有脚本
                         var path = DATAPATH + `scripts\\${name}\\`;
                         if (File.exists(path) && File.checkIsDir(path)) {
-                            var f = File.getFilesList(path);
+                            var files = File.getFilesList(path);
+                            var f = new Array();
+                            for (var i in files) {
+                                if (!File.checkIsDir(path + files[i])) {
+                                    f.push(files[i]);
+                                }
+                            }
                             if (f.length != 0) {
                                 for (var i in f) {
                                     f[i] = `${Format.Aqua}${parseInt(i) + 1} |${Format.Clear} ${f[i].slice(0, -4)}`;
@@ -806,6 +823,11 @@ mc.listen("onServerStarted", () => {
                             return out.error("您未创建过脚本");
                         }
 
+                    case "cleancache":
+                        // cleancache选项，清除所有缓存
+                        File.delete(DATAPATH + `scripts\\${name}\\cache\\`);
+                        return out.success("清除成功")
+
                     default:
                         // 无匹配项则删除
                         return out.error("pc: script: 未知的操作");
@@ -817,47 +839,32 @@ mc.listen("onServerStarted", () => {
                 switch (res.presetAction) {
                     case "circle2d":
                         // circle2d选项，提供基础的画圆操作
-                        arr.push("# circle2d vvv");
                         circle2d(res, arr);
-                        arr.push("# circle2d ^^^");
                         break;
                     case "circular_helix":
                         // circularHelix选项，提供基础的圆柱螺线操作
-                        arr.push("# circular_helix vvv")
                         circular_helix(res, arr);
-                        arr.push("# circular_helix ^^^")
                         break;
                     case "simple_circle":
                         // simple_circle选项，简化画圆操作
-                        arr.push("# simple_circle vvv")
                         simple_circle(res, ori.player.pos, arr);
-                        arr.push("# simple_circle ^^^")
                         break;
                     default:
                         // 无匹配项则报错
                         return out.error("pc: preset: 未知的操作");
                 }
-                if (res.presetToDo == "exec") {
-                    // 直接执行
-                    out.addMessage(`开始执行Script`);
-                    var loc = db.get(`${name}.exec`);
-                    if (loc != null) {
-                        return out.error("已有脚本正在运行");
-                    } else {
-                        // 加锁
-                        db.set(`${name}.exec`, true);
-                        // 丢给“解释器”就完事了
-                        scriptInterpret(arr, name, ori.player.pos.dimid, false);
-                        return out.success(`任务已添加`);
-                    }
+                // 直接执行
+                out.addMessage(`开始解释Script`);
+                var cache = scriptInterpret(arr, name);
+                var loc = db.get(`${name}.exec`);
+                if (loc != null) {
+                    return out.error("已有脚本正在运行");
                 } else {
-                    // 写入脚本
-                    var path = DATAPATH + `scripts\\${name}\\`;
-                    if (!File.checkIsDir(path)) {
-                        File.mkdir(path);
-                    }
-                    File.writeLine(path + `${res.name}.txt`, arr.join("\n"));
-                    return out.success("已写入脚本");
+                    // 加锁
+                    db.set(`${name}.exec`, true);
+                    // 丢给“解释器”就完事了
+                    scriptExecute(cache, name, ori.player.pos.dimid, false);
+                    return out.success(`任务已添加`);
                 }
             default:
                 // 无匹配项则报错

@@ -7,6 +7,7 @@
 + 分离解释和执行逻辑，脚本解释后产生中间缓存
 + 脚本新增`! <string>`语句
 + 修改`pc preset`指令的行为为直接执行
++ 脚本新增`preset`语句及两个子选项
 
 ## 安装
 + 将 `LLSE-PCamera.js` 放进 `plugins/` 文件夹就行
@@ -59,6 +60,8 @@
 + `origin <name: string>` 在遇到下一个 `end` 或结尾之前修饰 `cam` 选项，即变成 `execute at <target> run cam <name> <string>` 。这意味着 `cam` 里面的 `pos` 和 `facing` 将支持绝对坐标/相对坐标/局部坐标/玩家名称。
 + `setdim <dim: int>` 设置脚本执行的维度，不在同一维度的玩家将无法执行其之后的内容。建议设置在开头。可选值为0（主世界），1（地狱），2（末地）
 + `! <string>` 表示本行string内容不受head、tail、autodelay和origin修饰
++ `preset circle2d <origin_x: float> <origin_y: float> <origin_z: float> <radius: float> <fromAng: float> <toAng: float> <steps: int> <timePerStep: float> <facing_x: float> <facing_y: float> <facing_z: float>` 同指令
++ `preset circular_helix <origin_x: float> <origin_y: float> <origin_z: float> <radius: float> <fromAng: float> <toAng: float> <steps: int> <timePerStep: float> <height: float>` 同指令
 
 ## 编辑脚本
 + ` ` 内容前多输入一个空格即可正常发出，否则会被存进缓冲区

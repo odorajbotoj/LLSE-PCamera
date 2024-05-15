@@ -1,6 +1,7 @@
 {
     "entry": "LLSE-PCamera.js",
     "name": "LLSE-PCamera",
+    "version": "1.10.1",
     "type": "lse-quickjs",
     "dependencies": [
         {

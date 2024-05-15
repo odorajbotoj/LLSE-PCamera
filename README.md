@@ -1,23 +1,30 @@
 # LLSE-PCamera
-+ Programmable Camera 可编程视角相机 LiteLoaderBDS的Javascript插件
+
++ Programmable Camera 可编程视角相机 LiteLoaderBDS（或LegacyScriptEngine）的Javascript插件
 + *提示：根据个人测试得出结论，玩家视距范围之外的相机将不会加载画面*
 
-## v1.9.0更新说明
-+ 修复玩家名中有空格导致runcmd无法正确执行
-+ 分离解释和执行逻辑，脚本解释后产生中间缓存
-+ 脚本新增`! <string>`语句
-+ 修改`pc preset`指令的行为为直接执行
-+ 脚本新增`preset`语句及两个子选项
+## v1.10.0更新说明
+
++ 适配Lip安装器（您需要将 `LLSE-PCameraData` 文件夹从 `plugins` 文件夹迁移到 `plugins/LLSE-PCamera` 文件夹下）
++ 修复执行他人脚本时最终玩家目标错误的bug
++ 更改了缓存文件完整性检测，这将导致旧的缓存文件失效。清除后重新生成即可。
 
 ## 安装
-+ 将 `LLSE-PCamera.js` 放进 `plugins/` 文件夹就行
+
++ 使用lip
+
+```powershell
+lip install github.com/odorajbotoj/LLSE-PCamera
+```
 
 ## 配置
+
 + 在至少运行过一次后，生成的配置文件位于 `plugins/LLSE-PCameraData/conf.json`
 + `public_point` 决定是否可以查看他人点位。应为 `0` 或 `1`
 + `public_script` 决定是否可以执行他人脚本。应为 `0` 或 `1`
 
 ## 使用
+
 + `pc clear` 清除所有相机效果，中断执行脚本
 + `pc eval <text>` 相当于 `camera @s <text>`
 + `pc me` 打印当前所处坐标与视角信息
@@ -36,35 +43,43 @@
 + `pc shake <text>` 相当于 `camerashake add @s <text>`
 
 ## 脚本
-+ `delay <s: float>` 延时（秒）。语句操作不会阻塞等待结果，故延时十分重要。
+
+### 功能语句（受修饰影响）
+
 + `title <content: string> <type: int> <fadeInTick: int> <stayTick: int> <fadeOutTick: int>` content为双引号包裹的标题内容（支持反斜杠转义双引号），末尾三个参数（未知原因已失效）分别是淡入、停留、淡出时间。type取值如下：
 
 | type参数 | 消息类型 |
 |---|---|
-| 0 | 清空（Clear）
-| 1 | 重设（Reset）
-| 2 | 设置主标题（SetTitle）
-| 3 | 设置副标题（SetSubTitle）
-| 4 | 设置Actionbar（SetActionBar）
-| 5 | 设置显示时间（SetDurations）
-| 6 | Json型主标题（TitleTextObject）
-| 7 | Json型副标题（SubtitleTextObject）
-| 8 | Json型Actionbar（ActionbarTextObject）
+| 0 | 清空（Clear） |
+| 1 | 重设（Reset） |
+| 2 | 设置主标题（SetTitle） |
+| 3 | 设置副标题（SetSubTitle） |
+| 4 | 设置Actionbar（SetActionBar） |
+| 5 | 设置显示时间（SetDurations） |
+| 6 | Json型主标题（TitleTextObject） |
+| 7 | Json型副标题（SubtitleTextObject） |
+| 8 | Json型Actionbar（ActionbarTextObject） |
 
 + `toast <text1: string> <text2: string>` text1和text2分别是双引号包裹的toast上下两行内容（支持反斜杠转义双引号）。
 + `shake <string>` 同上述 `pc shake`
 + `cam <string>` 同上述 `pc eval`
-+ `head <string>` 在遇到下一个 `end` 或结尾前使用相同前缀
-+ `tail <string>` 在遇到下一个 `end` 或结尾前使用相同后缀
-+ `autodelay <s: int>` 在遇到下一个 `end` 或结尾前每一条指令后都执行delay
-+ `origin <name: string>` 在遇到下一个 `end` 或结尾之前修饰 `cam` 选项，即变成 `execute at <target> run cam <name> <string>` 。这意味着 `cam` 里面的 `pos` 和 `facing` 将支持绝对坐标/相对坐标/局部坐标/玩家名称。
-+ `setdim <dim: int>` 设置脚本执行的维度，不在同一维度的玩家将无法执行其之后的内容。建议设置在开头。可选值为0（主世界），1（地狱），2（末地）
-+ `! <string>` 表示本行string内容不受head、tail、autodelay和origin修饰
++ `! <string>` 表示本行string内容不受head、tail、autodelay和origin修饰（内容应为功能语句）
 + `preset circle2d <origin_x: float> <origin_y: float> <origin_z: float> <radius: float> <fromAng: float> <toAng: float> <steps: int> <timePerStep: float> <facing_x: float> <facing_y: float> <facing_z: float>` 同指令
 + `preset circular_helix <origin_x: float> <origin_y: float> <origin_z: float> <radius: float> <fromAng: float> <toAng: float> <steps: int> <timePerStep: float> <height: float>` 同指令
 
+### 流程语句（不受修饰影响）
+
++ `head <string>` 在遇到下一个 `end` 或结尾前使用相同前缀
++ `tail <string>` 在遇到下一个 `end` 或结尾前使用相同后缀
++ `setdim <dim: int>` 设置脚本执行的维度，不在同一维度的玩家将无法执行其之后的内容。建议设置在开头。可选值为0（主世界），1（地狱），2（末地）
++ `autodelay <s: int>` 在遇到下一个 `end` 或结尾前每一条指令后都执行delay
++ `origin <name: string>` 在遇到下一个 `end` 或结尾之前修饰 `cam` 选项，即变成 `execute at <target> run cam <name> <string>` 。这意味着 `cam` 里面的 `pos` 和 `facing` 将支持绝对坐标/相对坐标/局部坐标/玩家名称。
++ `end` 闭合一个修饰器
++ `delay <s: float>` 延时（秒）。cam语句操作不会阻塞等待结果，故延时十分重要。
+
 ## 编辑脚本
-+ ` ` 内容前多输入一个空格即可正常发出，否则会被存进缓冲区
+
++ 内容前多输入一个空格即可正常发出，否则会被存进缓冲区
 + `:m` 同上述 `pc me`
 + `:p` 打印缓冲区
 + `:w [name]` 写入文件或另存为
@@ -73,4 +88,5 @@
 + `:j i` 跳转到某一行
 
 ## 开源
+
 + MIT LICENSE

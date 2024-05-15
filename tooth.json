@@ -1,0 +1,29 @@
+{
+    "format_version": 2,
+    "tooth": "github.com/odorajbotoj/LLSE-PCamera",
+    "version": "1.10.0",
+    "info": {
+        "name": "LLSE-PCamera",
+        "description": "LLSE Programmable Camera 可编程视角相机",
+        "author": "odorajbotoj",
+        "tags": [
+            "levilamina",
+            "plugin",
+            "lse"
+        ]
+    },
+    "asset_url": "https://github.com/odorajbotoj/LLSE-PCamera/releases/download/v1.10.0/LLSE-PCamera.zip",
+    "dependencies": [
+        {
+            "name": "legacy-script-engine-quickjs"
+        }
+    ],
+    "files": {
+        "place": [
+            {
+                "src": "LLSE-PCamera/*",
+                "dest": "plugins/LLSE-PCamera/"
+            }
+        ]
+    }
+}

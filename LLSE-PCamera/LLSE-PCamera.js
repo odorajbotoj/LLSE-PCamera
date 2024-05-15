@@ -1,24 +1,22 @@
-/// <reference path="/home/odorajbotoj/workspace/mcbe/LiteLoaderSE-Aids/dts/helperlib/src/index.d.ts" />
-
 // 注册插件
-ll.registerPlugin("LLSE-PCamera", "LLSE Programmable Camera 可编程视角相机", [1, 9, 0, Version.Release], {
+ll.registerPlugin("LLSE-PCamera", "LLSE Programmable Camera 可编程视角相机", [1, 10, 0, Version.Release], {
     "Author": "odorajbotoj"
 });
 
-const VERSION = "1.9.0-Rel";
+const VERSION = "1.10.0-Rel";
 
 // 数据路径
-const DATAPATH = ".\\plugins\\LLSE-PCameraData\\";
+const DATAPATH = ".\\plugins\\LLSE-PCamera\\LLSE-PCameraData\\";
 
 /* 目录结构说明
-.\\plugins\\LLSE-PCameraData\\ - 数据根目录
-.\\plugins\\LLSE-PCameraData\\db\\ - 数据库目录
-.\\plugins\\LLSE-PCameraData\\scripts\\ - 脚本文件目录
-.\\plugins\\LLSE-PCameraData\\scripts\\${name}\\ - 个人脚本目录
-.\\plugins\\LLSE-PCameraData\\scripts\\${name}\\cache\\ - 解释后的缓存文件存放目录
-.\\plugins\\LLSE-PCameraData\\scripts\\${name}\\cache\\${script_name}.txt - 解释后的缓存文件
-.\\plugins\\LLSE-PCameraData\\scripts\\${name}\\${script_name}.txt - 脚本文件
-.\\plugins\\LLSE-PCameraData\\conf.json - 配置文件
+.\\plugins\\LLSE-PCamera\\LLSE-PCameraData\\ - 数据根目录
+.\\plugins\\LLSE-PCamera\\LLSE-PCameraData\\db\\ - 数据库目录
+.\\plugins\\LLSE-PCamera\\LLSE-PCameraData\\scripts\\ - 脚本文件目录
+.\\plugins\\LLSE-PCamera\\LLSE-PCameraData\\scripts\\${name}\\ - 个人脚本目录
+.\\plugins\\LLSE-PCamera\\LLSE-PCameraData\\scripts\\${name}\\cache\\ - 解释后的缓存文件存放目录
+.\\plugins\\LLSE-PCamera\\LLSE-PCameraData\\scripts\\${name}\\cache\\${script_name}.txt - 解释后的缓存文件
+.\\plugins\\LLSE-PCamera\\LLSE-PCameraData\\scripts\\${name}\\${script_name}.txt - 脚本文件
+.\\plugins\\LLSE-PCamera\\LLSE-PCameraData\\conf.json - 配置文件
 */
 
 // 数据库
@@ -280,7 +278,7 @@ function scriptInterpret(sArr, name) {
             pl.tell(`${Format.Yellow}Warning: 有未闭合的代码块${Format.Clear}`);
         }
     }
-    ret.push("ok");
+    ret.push("o\t\tk");
     return ret;
 }
 
@@ -290,7 +288,7 @@ async function scriptExecute(sArr, name, dim, rep) {
     // 这一部分重构过了，减少异步压力
     // 后来又重写了部分，减少了动态获取pl的次数，减小服务器压力
     // 第三次重写，分离解释与执行逻辑
-    if (sArr[sArr.length - 1] != "ok") {
+    if (sArr[sArr.length - 1] != "o\t\tk") {
         var pl = mc.getPlayer(name);
         if (pl != null) {
             pl.tell(`${Format.Red}损坏的缓存文件，请尝试清除缓存后重试${Format.Clear}`);
@@ -805,14 +803,14 @@ mc.listen("onServerStarted", () => {
                             // 获取脚本数组
                             var fa = f.split(/\r?\n|(?<!\n)\r/);
                             // 尝试读取缓存脚本
-                            var fc = File.readFrom(DATAPATH + `scripts\\${owner}\\cache\\${res.name}.txt`);
+                            var fc = File.readFrom(DATAPATH + `scripts\\${name}\\cache\\${res.name}.txt`);
                             var c; // cache array
                             if (fc == null) {
                                 // 解释脚本至缓存文件
                                 out.addMessage("正在解释脚本")
                                 c = scriptInterpret(fa, name);
-                                if (c[c.length - 1] != "ok") { return; }
-                                File.writeTo(DATAPATH + `scripts\\${owner}\\cache\\${res.name}.txt`, c.join("\n"));
+                                if (c[c.length - 1] != "o\t\tk") { return; }
+                                File.writeTo(DATAPATH + `scripts\\${name}\\cache\\${res.name}.txt`, c.join("\n"));
                             } else {
                                 // 生成MD5
                                 var md5 = data.toMD5(fa.join("\n"));
@@ -822,8 +820,8 @@ mc.listen("onServerStarted", () => {
                                     // 解释脚本至缓存文件
                                     out.addMessage("正在解释脚本")
                                     c = scriptInterpret(fa, name);
-                                    if (c[c.length - 1] != "ok") { return; }
-                                    File.writeTo(DATAPATH + `scripts\\${owner}\\cache\\${res.name}.txt`, c.join("\n"));
+                                    if (c[c.length - 1] != "o\t\tk") { return; }
+                                    File.writeTo(DATAPATH + `scripts\\${name}\\cache\\${res.name}.txt`, c.join("\n"));
                                 } else {
                                     c = fca;
                                 }

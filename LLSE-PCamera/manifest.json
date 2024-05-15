@@ -1,0 +1,10 @@
+{
+    "entry": "LLSE-PCamera.js",
+    "name": "LLSE-PCamera",
+    "type": "lse-quickjs",
+    "dependencies": [
+        {
+            "name": "legacy-script-engine-quickjs"
+        }
+    ]
+}

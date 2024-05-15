@@ -1,7 +1,7 @@
 {
     "format_version": 2,
     "tooth": "github.com/odorajbotoj/LLSE-PCamera",
-    "version": "1.10.0",
+    "version": "1.10.1",
     "info": {
         "name": "LLSE-PCamera",
         "description": "LLSE Programmable Camera 可编程视角相机",
@@ -12,12 +12,10 @@
             "lse"
         ]
     },
-    "asset_url": "https://github.com/odorajbotoj/LLSE-PCamera/releases/download/v1.10.0/LLSE-PCamera.zip",
-    "dependencies": [
-        {
-            "name": "legacy-script-engine-quickjs"
-        }
-    ],
+    "asset_url": "https://github.com/odorajbotoj/LLSE-PCamera/releases/download/v1.10.1/LLSE-PCamera.zip",
+    "dependencies": {
+        "gitea.litebds.com/LiteLDev/legacy-script-engine-quickjs": ">=0.7.8"
+    },
     "files": {
         "place": [
             {

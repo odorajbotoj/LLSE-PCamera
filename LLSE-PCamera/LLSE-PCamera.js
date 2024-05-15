@@ -1,9 +1,9 @@
 // 注册插件
-ll.registerPlugin("LLSE-PCamera", "LLSE Programmable Camera 可编程视角相机", [1, 10, 0, Version.Release], {
+ll.registerPlugin("LLSE-PCamera", "LLSE Programmable Camera 可编程视角相机", [1, 10, 1, Version.Release], {
     "Author": "odorajbotoj"
 });
 
-const VERSION = "1.10.0-Rel";
+const VERSION = "1.10.1-Rel";
 
 // 数据路径
 const DATAPATH = ".\\plugins\\LLSE-PCamera\\LLSE-PCameraData\\";

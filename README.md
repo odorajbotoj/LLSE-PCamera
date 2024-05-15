@@ -3,11 +3,9 @@
 + Programmable Camera 可编程视角相机 LiteLoaderBDS（或LegacyScriptEngine）的Javascript插件
 + *提示：根据个人测试得出结论，玩家视距范围之外的相机将不会加载画面*
 
-## v1.10.0更新说明
+## v1.10.1更新说明
 
-+ 适配Lip安装器（您需要将 `LLSE-PCameraData` 文件夹从 `plugins` 文件夹迁移到 `plugins/LLSE-PCamera` 文件夹下）
-+ 修复执行他人脚本时最终玩家目标错误的bug
-+ 更改了缓存文件完整性检测，这将导致旧的缓存文件失效。清除后重新生成即可。
++ 修复 `tooth.json` 。
 
 ## 安装
 
